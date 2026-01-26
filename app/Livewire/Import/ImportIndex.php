@@ -32,22 +32,26 @@ class ImportIndex extends Component
         $this->importing = true;
 
         try {
-            $data = Excel::toArray([], $this->file->getRealPath())[0];
-            
+            /** @var array<int, array<int, mixed>> $sheets */
+            $sheets = Excel::toArray(new class {}, $this->file->getRealPath());
+            $data = $sheets[0] ?? [];
+
             // Remove header row
-            $headers = array_shift($data);
-            
+            /** @var array<int, string> $headers */
+            $headers = array_shift($data) ?? [];
+
             $imported = 0;
             $failed = 0;
 
             foreach ($data as $index => $row) {
                 $rowNumber = $index + 2; // +2 because of header and 0-index
-                
+
                 try {
                     match ($this->importType) {
                         'schools' => $this->importSchool($row, $headers),
                         'policies' => $this->importPolicy($row, $headers),
                         'network_groups' => $this->importNetworkGroup($row, $headers),
+                        default => throw new \Exception("ประเภทการนำเข้าไม่ถูกต้อง: {$this->importType}"),
                     };
                     $imported++;
                 } catch (\Exception $e) {
@@ -63,7 +67,10 @@ class ImportIndex extends Component
             ];
 
             if ($imported > 0) {
-                session()->flash('success', "นำเข้าข้อมูลเรียบร้อย: {$imported} รายการ");
+                $this->dispatch('swal:success', [
+                    'title' => 'สำเร็จ!',
+                    'text' => "นำเข้าข้อมูลเรียบร้อย: {$imported} รายการ",
+                ]);
             }
         } catch (\Exception $e) {
             Log::error('Import error: ' . $e->getMessage());
@@ -93,8 +100,8 @@ class ImportIndex extends Component
                 'phone' => $data['phone'] ?? null,
                 'email' => $data['email'] ?? null,
                 'principalName' => $data['principalName'] ?? $data['principal_name'] ?? null,
-                'studentCount' => isset($data['studentCount']) ? (int)$data['studentCount'] : (isset($data['student_count']) ? (int)$data['student_count'] : null),
-                'teacherCount' => isset($data['teacherCount']) ? (int)$data['teacherCount'] : (isset($data['teacher_count']) ? (int)$data['teacher_count'] : null),
+                'studentCount' => isset($data['studentCount']) ? (int) $data['studentCount'] : (isset($data['student_count']) ? (int) $data['student_count'] : null),
+                'teacherCount' => isset($data['teacherCount']) ? (int) $data['teacherCount'] : (isset($data['teacher_count']) ? (int) $data['teacher_count'] : null),
             ]
         );
     }
@@ -112,7 +119,7 @@ class ImportIndex extends Component
             [
                 'title' => $data['title'],
                 'description' => $data['description'] ?? null,
-                'isActive' => isset($data['isActive']) ? (bool)$data['isActive'] : (isset($data['is_active']) ? (bool)$data['is_active'] : true),
+                'isActive' => isset($data['isActive']) ? (bool) $data['isActive'] : (isset($data['is_active']) ? (bool) $data['is_active'] : true),
             ]
         );
     }

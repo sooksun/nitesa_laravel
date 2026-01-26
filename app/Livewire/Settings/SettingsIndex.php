@@ -16,7 +16,7 @@ class SettingsIndex extends Component
     {
         $this->site_name = SystemSetting::get('site_name', 'NITESA');
         $this->area_office_name = SystemSetting::get('area_office_name', '');
-        $this->current_academic_year = SystemSetting::get('current_academic_year', (string)(date('Y') + 543));
+        $this->current_academic_year = SystemSetting::get('current_academic_year', (string) (date('Y') + 543));
         $this->allow_registration = SystemSetting::get('allow_registration', false);
     }
 
@@ -27,7 +27,10 @@ class SettingsIndex extends Component
         SystemSetting::set('current_academic_year', $this->current_academic_year, 'ปีการศึกษาปัจจุบัน');
         SystemSetting::set('allow_registration', $this->allow_registration, 'เปิด/ปิดการลงทะเบียน');
 
-        session()->flash('success', 'บันทึกการตั้งค่าเรียบร้อยแล้ว');
+        $this->dispatch('swal:success', [
+            'title' => 'สำเร็จ!',
+            'text' => 'บันทึกการตั้งค่าเรียบร้อยแล้ว',
+        ]);
     }
 
     public function render()

@@ -11,7 +11,8 @@ use Livewire\WithPagination;
 
 class SchoolList extends Component
 {
-    use WithPagination, WithSweetAlert;
+    use WithPagination;
+    use WithSweetAlert;
 
     public string $search = '';
     public string $district = '';

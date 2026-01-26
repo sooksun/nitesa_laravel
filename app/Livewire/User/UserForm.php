@@ -72,7 +72,7 @@ class UserForm extends Component
             'role' => $this->role,
         ];
 
-        if (!empty($this->password)) {
+        if (! empty($this->password)) {
             $userData['password'] = Hash::make($this->password);
         }
 
@@ -108,7 +108,7 @@ class UserForm extends Component
     public function render()
     {
         $title = $this->editing ? 'แก้ไขผู้ใช้' : 'เพิ่มผู้ใช้ใหม่';
-        
+
         return view('livewire.user.user-form')
             ->layout('layouts.app', ['title' => $title, 'header' => $title]);
     }

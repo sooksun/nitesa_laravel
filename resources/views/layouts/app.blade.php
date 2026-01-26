@@ -222,39 +222,7 @@
             <!-- Page content -->
             <main class="min-h-screen py-6">
                 <div class="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-                    <!-- Flash messages -->
-                    @if(session('success'))
-                        <div class="mb-6 rounded-xl bg-green-50 p-4 border border-green-200" x-data="{ show: true }" x-show="show" x-transition>
-                            <div class="flex items-center">
-                                <svg class="h-5 w-5 text-green-500 mr-3" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                                <p class="text-sm font-medium text-green-800 flex-1">{{ session('success') }}</p>
-                                <button type="button" @click="show = false" class="text-green-500 hover:text-green-700">
-                                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
-                                </button>
-                            </div>
-                        </div>
-                    @endif
-
-                    @if(session('error'))
-                        <div class="mb-6 rounded-xl bg-red-50 p-4 border border-red-200" x-data="{ show: true }" x-show="show" x-transition>
-                            <div class="flex items-center">
-                                <svg class="h-5 w-5 text-red-500 mr-3" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-                                </svg>
-                                <p class="text-sm font-medium text-red-800 flex-1">{{ session('error') }}</p>
-                                <button type="button" @click="show = false" class="text-red-500 hover:text-red-700">
-                                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
-                                </button>
-                            </div>
-                        </div>
-                    @endif
-
+                    {{-- Flash messages are now handled by SweetAlert2 in the footer script --}}
                     {{ $slot }}
                 </div>
             </main>
@@ -265,6 +233,54 @@
     @include('components.cookie-consent')
 
     @livewireScripts
+    
+    <!-- SweetAlert2 for Flash Messages -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            @if(session('success'))
+                Swal.fire({
+                    icon: 'success',
+                    title: 'สำเร็จ!',
+                    text: @json(session('success')),
+                    confirmButtonText: 'ตกลง',
+                    confirmButtonColor: '#10b981',
+                    timer: 3000,
+                    timerProgressBar: true
+                });
+            @endif
+            
+            @if(session('error'))
+                Swal.fire({
+                    icon: 'error',
+                    title: 'เกิดข้อผิดพลาด!',
+                    text: @json(session('error')),
+                    confirmButtonText: 'ตกลง',
+                    confirmButtonColor: '#ef4444'
+                });
+            @endif
+            
+            @if(session('warning'))
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'คำเตือน!',
+                    text: @json(session('warning')),
+                    confirmButtonText: 'ตกลง',
+                    confirmButtonColor: '#f59e0b'
+                });
+            @endif
+            
+            @if(session('info'))
+                Swal.fire({
+                    icon: 'info',
+                    title: 'แจ้งเตือน',
+                    text: @json(session('info')),
+                    confirmButtonText: 'ตกลง',
+                    confirmButtonColor: '#3b82f6'
+                });
+            @endif
+        });
+    </script>
+    
     @stack('scripts')
 </body>
 </html>

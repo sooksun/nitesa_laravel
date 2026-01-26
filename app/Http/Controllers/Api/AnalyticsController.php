@@ -4,11 +4,10 @@ namespace App\Http\Controllers\Api;
 
 use App\Enums\SupervisionStatus;
 use App\Http\Controllers\Controller;
-use App\Models\Policy;
 use App\Models\School;
 use App\Models\Supervision;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class AnalyticsController extends Controller
@@ -16,7 +15,7 @@ class AnalyticsController extends Controller
     public function stats(Request $request): JsonResponse
     {
         $academicYear = $request->academicYear ?? $request->academic_year;
-        
+
         $schoolQuery = School::query();
         $supervisionQuery = Supervision::query();
 
@@ -44,7 +43,7 @@ class AnalyticsController extends Controller
     public function supervisionStatus(Request $request): JsonResponse
     {
         $academicYear = $request->academicYear ?? $request->academic_year;
-        
+
         $query = DB::table('supervision');
 
         if ($academicYear) {
@@ -60,7 +59,7 @@ class AnalyticsController extends Controller
             ->select('status', DB::raw('count(*) as count'))
             ->groupBy('status')
             ->get();
-        
+
         $data = [];
         foreach ($results as $row) {
             $data[$row->status] = $row->count;
@@ -82,7 +81,7 @@ class AnalyticsController extends Controller
     public function policyUsage(Request $request): JsonResponse
     {
         $academicYear = $request->academicYear ?? $request->academic_year;
-        
+
         $query = DB::table('supervision')
             ->select('policy.title', 'policy.code', DB::raw('count(*) as usage_count'))
             ->leftJoin('policy', function ($join) {
@@ -112,7 +111,7 @@ class AnalyticsController extends Controller
     {
         $academicYear = $request->academicYear ?? $request->academic_year;
         $schoolId = $request->schoolId ?? $request->school_id;
-        
+
         $query = DB::table('indicator')
             ->join('supervision', 'indicator.supervisionId', '=', 'supervision.id')
             ->select('indicator.name', DB::raw('AVG(

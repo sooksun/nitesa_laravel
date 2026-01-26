@@ -31,7 +31,10 @@ class ProfileEdit extends Component
             'email' => $this->email,
         ]);
 
-        session()->flash('success', 'อัปเดตข้อมูลเรียบร้อยแล้ว');
+        $this->dispatch('swal:success', [
+            'title' => 'สำเร็จ!',
+            'text' => 'อัปเดตข้อมูลเรียบร้อยแล้ว',
+        ]);
     }
 
     public function updatePassword()
@@ -41,8 +44,9 @@ class ProfileEdit extends Component
             'new_password' => ['required', 'string', 'min:8', 'confirmed'],
         ]);
 
-        if (!Hash::check($this->current_password, auth()->user()->password)) {
+        if (! Hash::check($this->current_password, auth()->user()->password)) {
             $this->addError('current_password', 'รหัสผ่านปัจจุบันไม่ถูกต้อง');
+
             return;
         }
 
@@ -52,7 +56,10 @@ class ProfileEdit extends Component
 
         $this->reset(['current_password', 'new_password', 'new_password_confirmation']);
 
-        session()->flash('success', 'เปลี่ยนรหัสผ่านเรียบร้อยแล้ว');
+        $this->dispatch('swal:success', [
+            'title' => 'สำเร็จ!',
+            'text' => 'เปลี่ยนรหัสผ่านเรียบร้อยแล้ว',
+        ]);
     }
 
     public function render()

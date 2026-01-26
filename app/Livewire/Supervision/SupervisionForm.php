@@ -8,10 +8,20 @@ use App\Models\Indicator;
 use App\Models\Policy;
 use App\Models\School;
 use App\Models\Supervision;
+use App\Services\SupervisionService;
+use Illuminate\Contracts\View\View;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 
+/**
+ * Livewire Component for Supervision Form (Create/Edit)
+ *
+ * @package App\Livewire\Supervision
+ */
 class SupervisionForm extends Component
 {
     use WithFileUploads;
@@ -28,7 +38,7 @@ class SupervisionForm extends Component
     public ?string $areaPolicyId = null;
     public string $summary = '';
     public string $suggestions = '';
-    
+
     public array $indicators = [];
     public array $uploads = [];
 
@@ -79,7 +89,7 @@ class SupervisionForm extends Component
         if ($supervision && $supervision->exists) {
             $this->supervision = $supervision;
             $this->editing = true;
-            
+
             $this->schoolId = $supervision->schoolId;
             $this->type = $supervision->type;
             $this->date = $supervision->date->format('Y-m-d');
@@ -98,8 +108,8 @@ class SupervisionForm extends Component
             ])->toArray();
         } else {
             $this->date = now()->format('Y-m-d');
-            $this->academicYear = (string)(now()->year + 543);
-            
+            $this->academicYear = (string) (now()->year + 543);
+
             // Initialize default indicators
             foreach ($this->defaultIndicators as $name) {
                 $this->indicators[] = [
@@ -112,7 +122,12 @@ class SupervisionForm extends Component
         }
     }
 
-    public function addIndicator()
+    /**
+     * Add a new indicator row
+     *
+     * @return void
+     */
+    public function addIndicator(): void
     {
         $this->indicators[] = [
             'id' => null,
@@ -122,127 +137,173 @@ class SupervisionForm extends Component
         ];
     }
 
-    public function removeIndicator($index)
+    /**
+     * Remove an indicator by index
+     *
+     * @param int $index
+     * @return void
+     */
+    public function removeIndicator(int $index): void
     {
-        unset($this->indicators[$index]);
-        $this->indicators = array_values($this->indicators);
+        if (isset($this->indicators[$index])) {
+            unset($this->indicators[$index]);
+            $this->indicators = array_values($this->indicators);
+        }
     }
 
-    public function save($status = 'DRAFT')
+    /**
+     * Save supervision (create or update)
+     *
+     * @param string $status Status to save (default: DRAFT)
+     * @return RedirectResponse
+     */
+    public function save(string $status = 'DRAFT'): RedirectResponse
     {
         $this->validate();
 
-        $data = [
-            'schoolId' => $this->schoolId,
-            'userId' => auth()->id(),
-            'type' => $this->type,
-            'date' => $this->date,
-            'academicYear' => $this->academicYear ?: null,
-            'ministerPolicyId' => $this->ministerPolicyId ?: null,
-            'obecPolicyId' => $this->obecPolicyId ?: null,
-            'areaPolicyId' => $this->areaPolicyId ?: null,
-            'summary' => $this->summary,
-            'suggestions' => $this->suggestions,
-            'status' => $status,
-        ];
+        try {
+            $data = [
+                'schoolId' => $this->schoolId,
+                'userId' => auth()->id(),
+                'type' => $this->type,
+                'date' => $this->date,
+                'academicYear' => $this->academicYear ?: null,
+                'ministerPolicyId' => $this->ministerPolicyId ?: null,
+                'obecPolicyId' => $this->obecPolicyId ?: null,
+                'areaPolicyId' => $this->areaPolicyId ?: null,
+                'summary' => $this->summary,
+                'suggestions' => $this->suggestions,
+                'status' => SupervisionStatus::from($status),
+            ];
 
-        if ($this->editing) {
-            $this->supervision->update($data);
-            $supervision = $this->supervision;
-            
-            // Update or create indicators
-            $existingIds = [];
-            foreach ($this->indicators as $ind) {
-                if (!empty($ind['name'])) {
-                    if (!empty($ind['id'])) {
-                        $indicator = Indicator::find($ind['id']);
-                        if ($indicator) {
-                            $indicator->update([
-                                'name' => $ind['name'],
-                                'level' => $ind['level'],
-                                'comment' => $ind['comment'] ?: null,
-                            ]);
-                            $existingIds[] = $ind['id'];
-                        }
-                    } else {
-                        $indicator = $supervision->indicators()->create([
-                            'name' => $ind['name'],
-                            'level' => $ind['level'],
-                            'comment' => $ind['comment'] ?: null,
-                        ]);
-                        $existingIds[] = $indicator->id;
-                    }
-                }
-            }
-            
-            // Delete removed indicators
-            $supervision->indicators()->whereNotIn('id', $existingIds)->delete();
-            
-            $message = 'อัปเดตการนิเทศเรียบร้อยแล้ว';
-        } else {
-            $supervision = Supervision::create($data);
-            
-            // Create indicators
-            foreach ($this->indicators as $ind) {
-                if (!empty($ind['name'])) {
-                    $supervision->indicators()->create([
-                        'name' => $ind['name'],
-                        'level' => $ind['level'],
-                        'comment' => $ind['comment'] ?: null,
-                    ]);
-                }
-            }
-            
-            $message = 'บันทึกการนิเทศเรียบร้อยแล้ว';
-        }
+            $service = app(SupervisionService::class);
 
-        // Handle file uploads
-        foreach ($this->uploads as $file) {
-            $path = $file->store('attachments', 'local');
-            $supervision->attachments()->create([
-                'filename' => $file->getClientOriginalName(),
-                'fileUrl' => $path,
-                'fileType' => $file->getMimeType(),
-                'fileSize' => $file->getSize(),
-                'uploadedAt' => now(),
+            if ($this->editing && $this->supervision !== null) {
+                $supervision = $service->updateSupervision(
+                    $this->supervision,
+                    $data,
+                    $this->indicators
+                );
+                $message = 'อัปเดตการนิเทศเรียบร้อยแล้ว';
+            } else {
+                $supervision = $service->createSupervision($data, $this->indicators);
+                $message = 'บันทึกการนิเทศเรียบร้อยแล้ว';
+            }
+
+            // Handle file uploads
+            $this->handleFileUploads($supervision);
+
+            // Clear dashboard cache
+            \App\Livewire\Dashboard\DashboardSummary::clearCache($supervision->academicYear);
+
+            return redirect()
+                ->route('supervisions.show', $supervision)
+                ->with('success', $message);
+        } catch (\Exception $e) {
+            Log::error('Failed to save supervision', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ]);
+
+            $this->dispatch('swal:error', [
+                'title' => 'เกิดข้อผิดพลาด',
+                'text' => 'ไม่สามารถบันทึกการนิเทศได้: ' . $e->getMessage(),
+            ]);
+
+            return redirect()->back();
         }
-
-        return redirect()->route('supervisions.show', $supervision)->with('success', $message);
     }
 
-    public function saveAndSubmit()
+    /**
+     * Save and submit supervision for approval
+     *
+     * @return RedirectResponse
+     */
+    public function saveAndSubmit(): RedirectResponse
     {
-        $this->save('SUBMITTED');
+        return $this->save('SUBMITTED');
     }
 
-    public function getSchoolsProperty()
+    /**
+     * Handle file uploads for supervision
+     *
+     * @param Supervision $supervision
+     * @return void
+     */
+    protected function handleFileUploads(Supervision $supervision): void
+    {
+        foreach ($this->uploads as $file) {
+            try {
+                $path = $file->store('attachments', 'local');
+                $supervision->attachments()->create([
+                    'filename' => $file->getClientOriginalName(),
+                    'fileUrl' => $path,
+                    'fileType' => $file->getMimeType(),
+                    'fileSize' => $file->getSize(),
+                    'uploadedAt' => now(),
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Failed to upload file', [
+                    'filename' => $file->getClientOriginalName(),
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+    }
+
+    /**
+     * Get schools available for selection
+     *
+     * @return Collection<int, School>
+     */
+    public function getSchoolsProperty(): Collection
     {
         $query = School::orderBy('name');
-        
-        if (auth()->user()->isSupervisor()) {
-            $assignedSchoolIds = auth()->user()->assignedSchools()->pluck('school.id');
+
+        $user = auth()->user();
+        if ($user !== null && $user->isSupervisor()) {
+            $assignedSchoolIds = $user->assignedSchools()->pluck('school.id');
             $query->whereIn('id', $assignedSchoolIds);
         }
 
         return $query->get();
     }
 
-    public function getPoliciesProperty()
+    /**
+     * Get active policies
+     *
+     * @return Collection<int, Policy>
+     */
+    public function getPoliciesProperty(): Collection
     {
-        return Policy::where('isActive', true)->orderBy('code')->get();
+        return Policy::where('isActive', true)
+            ->orderBy('code')
+            ->get();
     }
 
-    public function getIndicatorLevelsProperty()
+    /**
+     * Get indicator levels
+     *
+     * @return array<int, IndicatorLevel>
+     */
+    public function getIndicatorLevelsProperty(): array
     {
         return IndicatorLevel::cases();
     }
 
-    public function render()
+    /**
+     * Render the component
+     *
+     * @return View
+     */
+    public function render(): View
     {
         $title = $this->editing ? 'แก้ไขการนิเทศ' : 'บันทึกการนิเทศใหม่';
-        
+
         return view('livewire.supervision.supervision-form')
-            ->layout('layouts.app', ['title' => $title, 'header' => $title]);
+            ->layout('layouts.app', [
+                'title' => $title,
+                'header' => $title,
+            ]);
     }
 }

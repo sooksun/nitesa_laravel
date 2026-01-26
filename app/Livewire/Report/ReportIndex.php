@@ -2,7 +2,6 @@
 
 namespace App\Livewire\Report;
 
-use App\Enums\SupervisionStatus;
 use App\Models\NetworkGroup;
 use App\Models\School;
 use App\Models\Supervision;
@@ -19,7 +18,7 @@ class ReportIndex extends Component
     public function mount()
     {
         $latestYear = Supervision::max('academicYear');
-        $this->academicYear = $latestYear ?? (string)(date('Y') + 543);
+        $this->academicYear = $latestYear ?? (string) (date('Y') + 543);
     }
 
     public function getAcademicYearsProperty()
@@ -60,10 +59,12 @@ class ReportIndex extends Component
         // Use DB::table to avoid Enum casting issues
         $statusQuery = DB::table('supervision')
             ->when($this->academicYear, fn($q) => $q->where('academicYear', $this->academicYear))
-            ->when($this->district, fn($q) => $q->whereIn('schoolId', 
+            ->when($this->district, fn($q) => $q->whereIn(
+                'schoolId',
                 School::where('district', $this->district)->pluck('id')
             ))
-            ->when($this->networkGroupId, fn($q) => $q->whereIn('schoolId', 
+            ->when($this->networkGroupId, fn($q) => $q->whereIn(
+                'schoolId',
                 School::where('networkGroupId', $this->networkGroupId)->pluck('id')
             ));
 
@@ -71,7 +72,7 @@ class ReportIndex extends Component
             ->select('status', DB::raw('count(*) as count'))
             ->groupBy('status')
             ->get();
-        
+
         $statusBreakdown = [];
         foreach ($statusResults as $row) {
             $statusBreakdown[$row->status] = $row->count;

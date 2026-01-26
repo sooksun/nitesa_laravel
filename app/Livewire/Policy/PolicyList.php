@@ -11,7 +11,8 @@ use Livewire\WithPagination;
 
 class PolicyList extends Component
 {
-    use WithPagination, WithSweetAlert;
+    use WithPagination;
+    use WithSweetAlert;
 
     public string $search = '';
     public string $type = '';
@@ -31,7 +32,7 @@ class PolicyList extends Component
 
     public function toggleActive(Policy $policy)
     {
-        $policy->update(['isActive' => !$policy->isActive]);
+        $policy->update(['isActive' => ! $policy->isActive]);
         $this->swalSuccess($policy->isActive ? 'เปิดใช้งานนโยบายแล้ว' : 'ปิดใช้งานนโยบายแล้ว');
     }
 

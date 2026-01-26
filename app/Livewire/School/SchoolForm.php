@@ -26,8 +26,8 @@ class SchoolForm extends Component
 
     protected function rules(): array
     {
-        $uniqueRule = $this->editing 
-            ? 'unique:school,code,' . $this->school->id 
+        $uniqueRule = $this->editing
+            ? 'unique:school,code,' . $this->school->id
             : 'unique:school,code';
 
         return [
@@ -86,7 +86,7 @@ class SchoolForm extends Component
     public function render()
     {
         $title = $this->editing ? 'แก้ไขโรงเรียน' : 'เพิ่มโรงเรียนใหม่';
-        
+
         return view('livewire.school.school-form')
             ->layout('layouts.app', ['title' => $title, 'header' => $title]);
     }

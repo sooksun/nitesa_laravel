@@ -11,7 +11,7 @@ enum IndicatorLevel: string
 
     public function label(): string
     {
-        return match($this) {
+        return match ($this) {
             self::EXCELLENT => 'ดีเยี่ยม',
             self::GOOD => 'ดี',
             self::FAIR => 'พอใช้',
@@ -21,7 +21,7 @@ enum IndicatorLevel: string
 
     public function score(): int
     {
-        return match($this) {
+        return match ($this) {
             self::EXCELLENT => 4,
             self::GOOD => 3,
             self::FAIR => 2,
@@ -31,7 +31,7 @@ enum IndicatorLevel: string
 
     public function color(): string
     {
-        return match($this) {
+        return match ($this) {
             self::EXCELLENT => 'green',
             self::GOOD => 'blue',
             self::FAIR => 'yellow',

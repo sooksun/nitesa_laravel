@@ -11,7 +11,8 @@ use Livewire\WithPagination;
 
 class UserList extends Component
 {
-    use WithPagination, WithSweetAlert;
+    use WithPagination;
+    use WithSweetAlert;
 
     public string $search = '';
     public string $role = '';
@@ -38,10 +39,11 @@ class UserList extends Component
     {
         if ($this->deleteId) {
             $user = User::find($this->deleteId);
-            
+
             if ($user && $user->id === auth()->id()) {
                 $this->swalError('ไม่สามารถลบบัญชีตัวเองได้');
                 $this->deleteId = null;
+
                 return;
             }
 

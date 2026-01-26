@@ -1,0 +1,13 @@
+includes:
+    - vendor/nunomaduro/larastan/extension.neon
+
+parameters:
+    paths:
+        - app/
+
+    # Level 5 is a good starting point
+    level: 5
+
+    # Exclude paths from analysis
+    excludePaths:
+        - app/Http/Middleware/TrustProxies.php

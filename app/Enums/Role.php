@@ -11,7 +11,7 @@ enum Role: string
 
     public function label(): string
     {
-        return match($this) {
+        return match ($this) {
             self::ADMIN => 'ผู้ดูแลระบบ',
             self::SUPERVISOR => 'ศึกษานิเทศก์',
             self::SCHOOL => 'โรงเรียน',
@@ -21,7 +21,7 @@ enum Role: string
 
     public function color(): string
     {
-        return match($this) {
+        return match ($this) {
             self::ADMIN => 'red',
             self::SUPERVISOR => 'blue',
             self::SCHOOL => 'green',

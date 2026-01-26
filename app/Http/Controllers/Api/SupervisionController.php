@@ -4,20 +4,34 @@ namespace App\Http\Controllers\Api;
 
 use App\Enums\SupervisionStatus;
 use App\Http\Controllers\Controller;
-use App\Models\Supervision;
 use App\Models\Acknowledgement;
-use Illuminate\Http\Request;
+use App\Models\Supervision;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 
+/**
+ * API Controller for Supervision management
+ *
+ * @package App\Http\Controllers\Api
+ */
 class SupervisionController extends Controller
 {
+    /**
+     * Get paginated list of supervisions with filters
+     *
+     * @param Request $request
+     * @return JsonResponse<LengthAwarePaginator>
+     */
     public function index(Request $request): JsonResponse
     {
         $query = Supervision::with(['school', 'user'])
             ->withCount(['indicators', 'attachments']);
 
-        if ($request->has('search')) {
-            $query->whereHas('school', fn($q) => $q->where('name', 'like', "%{$request->search}%"));
+        if ($request->has('search') && $request->filled('search')) {
+            $search = $request->string('search')->value();
+            $query->whereHas('school', fn(Builder $q) => $q->where('name', 'like', "%{$search}%"));
         }
 
         if ($request->has('status')) {
@@ -48,6 +62,12 @@ class SupervisionController extends Controller
         return response()->json($supervisions);
     }
 
+    /**
+     * Create a new supervision
+     *
+     * @param Request $request
+     * @return JsonResponse<Supervision>
+     */
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -73,7 +93,7 @@ class SupervisionController extends Controller
         ]);
 
         // Create indicators
-        if (!empty($validated['indicators'])) {
+        if (! empty($validated['indicators'])) {
             foreach ($validated['indicators'] as $ind) {
                 $supervision->indicators()->create([
                     'supervisionId' => $supervision->id,
@@ -87,6 +107,12 @@ class SupervisionController extends Controller
         return response()->json($supervision, 201);
     }
 
+    /**
+     * Get a single supervision with all relationships
+     *
+     * @param Supervision $supervision
+     * @return JsonResponse<Supervision>
+     */
     public function show(Supervision $supervision): JsonResponse
     {
         $supervision->load([
@@ -103,11 +129,22 @@ class SupervisionController extends Controller
         return response()->json($supervision);
     }
 
+    /**
+     * Update an existing supervision
+     *
+     * @param Request $request
+     * @param Supervision $supervision
+     * @return JsonResponse<Supervision>
+     */
     public function update(Request $request, Supervision $supervision): JsonResponse
     {
         // Only allow updates on drafts or needs_improvement
-        if (!in_array($supervision->status, [SupervisionStatus::DRAFT, SupervisionStatus::NEEDS_IMPROVEMENT])) {
-            return response()->json(['message' => 'ไม่สามารถแก้ไขการนิเทศที่ส่งแล้วได้'], 403);
+        $allowedStatuses = [SupervisionStatus::DRAFT, SupervisionStatus::NEEDS_IMPROVEMENT];
+        if (! in_array($supervision->status, $allowedStatuses, true)) {
+            return response()->json(
+                ['message' => 'ไม่สามารถแก้ไขการนิเทศที่ส่งแล้วได้'],
+                403
+            );
         }
 
         $validated = $request->validate([
@@ -132,7 +169,7 @@ class SupervisionController extends Controller
         if (isset($validated['indicators'])) {
             $existingIds = [];
             foreach ($validated['indicators'] as $ind) {
-                if (!empty($ind['id'])) {
+                if (! empty($ind['id'])) {
                     $indicator = $supervision->indicators()->find($ind['id']);
                     if ($indicator) {
                         $indicator->update($ind);
@@ -151,11 +188,20 @@ class SupervisionController extends Controller
         return response()->json($supervision);
     }
 
+    /**
+     * Delete a supervision (only drafts)
+     *
+     * @param Supervision $supervision
+     * @return JsonResponse<null>
+     */
     public function destroy(Supervision $supervision): JsonResponse
     {
         // Only allow deletion of drafts
         if ($supervision->status !== SupervisionStatus::DRAFT) {
-            return response()->json(['message' => 'ไม่สามารถลบการนิเทศที่ส่งแล้วได้'], 403);
+            return response()->json(
+                ['message' => 'ไม่สามารถลบการนิเทศที่ส่งแล้วได้'],
+                403
+            );
         }
 
         $supervision->delete();
@@ -164,10 +210,20 @@ class SupervisionController extends Controller
     }
 
     // Workflow actions
+    /**
+     * Submit supervision for approval
+     *
+     * @param Request $request
+     * @param Supervision $supervision
+     * @return JsonResponse<Supervision>
+     */
     public function submit(Request $request, Supervision $supervision): JsonResponse
     {
-        if (!$supervision->canSubmit()) {
-            return response()->json(['message' => 'ไม่สามารถส่งการนิเทศนี้ได้'], 403);
+        if (! $supervision->canSubmit()) {
+            return response()->json(
+                ['message' => 'ไม่สามารถส่งการนิเทศนี้ได้'],
+                403
+            );
         }
 
         $supervision->submit();
@@ -177,13 +233,26 @@ class SupervisionController extends Controller
             ->performedOn($supervision)
             ->log('ส่งการนิเทศเพื่ออนุมัติ');
 
+        // ส่ง notification ไปยังผู้บริหารและผู้ดูแลระบบ
+        $this->notifyExecutivesAndAdmins($supervision);
+
         return response()->json($supervision);
     }
 
+    /**
+     * Approve supervision
+     *
+     * @param Request $request
+     * @param Supervision $supervision
+     * @return JsonResponse<Supervision>
+     */
     public function approve(Request $request, Supervision $supervision): JsonResponse
     {
-        if (!$supervision->canApprove()) {
-            return response()->json(['message' => 'ไม่สามารถอนุมัติการนิเทศนี้ได้'], 403);
+        if (! $supervision->canApprove()) {
+            return response()->json(
+                ['message' => 'ไม่สามารถอนุมัติการนิเทศนี้ได้'],
+                403
+            );
         }
 
         $supervision->approve();
@@ -193,29 +262,75 @@ class SupervisionController extends Controller
             ->performedOn($supervision)
             ->log('อนุมัติการนิเทศ');
 
+        // ส่ง notification ไปยังผู้นิเทศที่สร้างการนิเทศนี้
+        $supervision->user->notify(
+            new \App\Notifications\SupervisionApprovedNotification(
+                $supervision,
+                $request->user()->name
+            )
+        );
+
         return response()->json($supervision);
     }
 
+    /**
+     * Reject supervision (send back for improvement)
+     *
+     * @param Request $request
+     * @param Supervision $supervision
+     * @return JsonResponse<Supervision>
+     */
     public function reject(Request $request, Supervision $supervision): JsonResponse
     {
-        if (!$supervision->canReject()) {
-            return response()->json(['message' => 'ไม่สามารถปฏิเสธการนิเทศนี้ได้'], 403);
+        if (! $supervision->canReject()) {
+            return response()->json(
+                ['message' => 'ไม่สามารถปฏิเสธการนิเทศนี้ได้'],
+                403
+            );
         }
 
+        $validated = $request->validate([
+            'reason' => ['nullable', 'string', 'max:500'],
+        ]);
+
         $supervision->reject();
+
+        $logMessage = 'ส่งกลับเพื่อปรับปรุง';
+        if (! empty($validated['reason'])) {
+            $logMessage .= ': ' . $validated['reason'];
+        }
 
         activity()
             ->causedBy($request->user())
             ->performedOn($supervision)
-            ->log('ส่งกลับเพื่อปรับปรุง');
+            ->log($logMessage);
+
+        // ส่ง notification ไปยังผู้นิเทศที่สร้างการนิเทศนี้
+        $supervision->user->notify(
+            new \App\Notifications\SupervisionRejectedNotification(
+                $supervision,
+                $request->user()->name,
+                $validated['reason'] ?? null
+            )
+        );
 
         return response()->json($supervision);
     }
 
+    /**
+     * Publish supervision
+     *
+     * @param Request $request
+     * @param Supervision $supervision
+     * @return JsonResponse<Supervision>
+     */
     public function publish(Request $request, Supervision $supervision): JsonResponse
     {
-        if (!$supervision->canPublish()) {
-            return response()->json(['message' => 'ไม่สามารถเผยแพร่การนิเทศนี้ได้'], 403);
+        if (! $supervision->canPublish()) {
+            return response()->json(
+                ['message' => 'ไม่สามารถเผยแพร่การนิเทศนี้ได้'],
+                403
+            );
         }
 
         $supervision->publish();
@@ -225,22 +340,38 @@ class SupervisionController extends Controller
             ->performedOn($supervision)
             ->log('เผยแพร่การนิเทศ');
 
+        // ส่ง notification ไปยังโรงเรียนและผู้เกี่ยวข้อง
+        $this->notifySchool($supervision);
+
         return response()->json($supervision);
     }
 
+    /**
+     * Acknowledge supervision (by school)
+     *
+     * @param Request $request
+     * @param Supervision $supervision
+     * @return JsonResponse<Supervision>
+     */
     public function acknowledge(Request $request, Supervision $supervision): JsonResponse
     {
         if ($supervision->status !== SupervisionStatus::PUBLISHED) {
-            return response()->json(['message' => 'การนิเทศยังไม่ถูกเผยแพร่'], 403);
+            return response()->json(
+                ['message' => 'การนิเทศยังไม่ถูกเผยแพร่'],
+                403
+            );
         }
 
-        if ($supervision->acknowledgement) {
-            return response()->json(['message' => 'การนิเทศนี้รับทราบแล้ว'], 403);
+        if ($supervision->acknowledgement !== null) {
+            return response()->json(
+                ['message' => 'การนิเทศนี้รับทราบแล้ว'],
+                403
+            );
         }
 
         $validated = $request->validate([
-            'acknowledgedBy' => 'required|string|max:255',
-            'comment' => 'nullable|string',
+            'acknowledgedBy' => ['required', 'string', 'max:255'],
+            'comment' => ['nullable', 'string', 'max:1000'],
         ]);
 
         Acknowledgement::create([
@@ -258,5 +389,49 @@ class SupervisionController extends Controller
         $supervision->load('acknowledgement');
 
         return response()->json($supervision);
+    }
+
+    /**
+     * Send notification to executives and admins
+     *
+     * @param Supervision $supervision
+     * @return void
+     */
+    protected function notifyExecutivesAndAdmins(Supervision $supervision): void
+    {
+        $recipients = \App\Models\User::whereIn('role', ['EXECUTIVE', 'ADMIN'])
+            ->where('isActive', true)
+            ->get();
+
+        foreach ($recipients as $recipient) {
+            $recipient->notify(
+                new \App\Notifications\SupervisionSubmittedNotification($supervision)
+            );
+        }
+    }
+
+    /**
+     * Send notification to school and related users
+     *
+     * @param Supervision $supervision
+     * @return void
+     */
+    protected function notifySchool(Supervision $supervision): void
+    {
+        // Find users with SCHOOL role
+        $schoolUsers = \App\Models\User::where('role', 'SCHOOL')
+            ->where('isActive', true)
+            ->get();
+
+        foreach ($schoolUsers as $user) {
+            $user->notify(
+                new \App\Notifications\SupervisionPublishedNotification($supervision)
+            );
+        }
+
+        // Also notify the supervisor who created this supervision
+        $supervision->user->notify(
+            new \App\Notifications\SupervisionPublishedNotification($supervision)
+        );
     }
 }

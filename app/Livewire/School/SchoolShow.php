@@ -23,7 +23,7 @@ class SchoolShow extends Component
         return view('livewire.school.school-show')
             ->layout('layouts.app', [
                 'title' => $this->school->name,
-                'header' => 'รายละเอียดโรงเรียน'
+                'header' => 'รายละเอียดโรงเรียน',
             ]);
     }
 }

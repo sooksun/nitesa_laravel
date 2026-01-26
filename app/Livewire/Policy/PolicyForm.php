@@ -70,7 +70,7 @@ class PolicyForm extends Component
     public function render()
     {
         $title = $this->editing ? 'แก้ไขนโยบาย' : 'เพิ่มนโยบายใหม่';
-        
+
         return view('livewire.policy.policy-form')
             ->layout('layouts.app', ['title' => $title, 'header' => $title]);
     }

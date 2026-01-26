@@ -22,7 +22,7 @@ enum PolicyType: string
 
     public function label(): string
     {
-        return match($this) {
+        return match ($this) {
             self::NAT_VALUES_LOYALTY => 'คุณธรรม จริยธรรม ความเป็นไทย และความภาคภูมิใจในความเป็นไทย',
             self::CIVIC_HISTORY_GEO => 'หน้าที่พลเมือง ประวัติศาสตร์ และภูมิศาสตร์',
             self::EDU_INNOV_TECH => 'การศึกษาเพื่อการพัฒนาทักษะในศตวรรษที่ 21 และนวัตกรรมเทคโนโลยี',

@@ -123,6 +123,52 @@ resources/views/
 └── auth/            # Auth Views
 ```
 
+## 📚 เอกสารเพิ่มเติม
+
+- 📖 [คู่มือการใช้งานระบบ (USER_MANUAL.md)](./USER_MANUAL.md)
+- 🚀 [คู่มือ Production Deployment (PRODUCTION_DEPLOYMENT.md)](./PRODUCTION_DEPLOYMENT.md)
+- ⚡ [คู่มือการตั้งค่า Local (LOCAL_SETUP.md)](./LOCAL_SETUP.md)
+- 🔔 [คู่มือการตั้งค่า Notification (NOTIFICATION_SETUP.md)](./NOTIFICATION_SETUP.md)
+- 📁 [คู่มือการตั้งค่า File Storage (FILE_STORAGE_SETUP.md)](./FILE_STORAGE_SETUP.md)
+- 📊 [คู่มือ Performance Optimization (PERFORMANCE_OPTIMIZATION.md)](./PERFORMANCE_OPTIMIZATION.md)
+- 📈 [รายงาน Code Quality (CODE_QUALITY_IMPROVEMENTS.md)](./CODE_QUALITY_IMPROVEMENTS.md)
+
+## 🚀 Production Deployment
+
+### สำหรับ Server: http://203.172.184.47:9000/
+
+**Quick Setup:**
+```bash
+# 1. Run production setup script
+chmod +x production-setup.sh
+./production-setup.sh
+
+# 2. Review and update .env
+nano .env
+
+# 3. Test the application
+# Visit: http://203.172.184.47:9000/
+```
+
+**เอกสาร:**
+- 📖 [คู่มือการตั้งค่า Production Server (PRODUCTION_SERVER_SETUP.md)](./PRODUCTION_SERVER_SETUP.md) - สำหรับ server นี้โดยเฉพาะ
+- 📖 [คู่มือ Production Deployment แบบเต็ม (PRODUCTION_DEPLOYMENT.md)](./PRODUCTION_DEPLOYMENT.md) - สำหรับ production ทั่วไป
+
+### สำหรับ Production Server อื่นๆ
+
+**Quick Start:**
+```bash
+# 1. Copy production environment file
+cp .env.production.example .env
+
+# 2. Edit .env with production values
+nano .env
+
+# 3. Run deployment script
+chmod +x deploy.sh
+./deploy.sh
+```
+
 ## License
 
 MIT

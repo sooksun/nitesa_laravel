@@ -16,8 +16,8 @@ class Policy extends Model
     protected $keyType = 'string';
     public $incrementing = false;
 
-    const CREATED_AT = 'createdAt';
-    const UPDATED_AT = 'updatedAt';
+    public const CREATED_AT = 'createdAt';
+    public const UPDATED_AT = 'updatedAt';
 
     protected $fillable = [
         'type',
@@ -41,7 +41,6 @@ class Policy extends Model
             }
         });
     }
-
 
     public function ministerSupervisions(): HasMany
     {

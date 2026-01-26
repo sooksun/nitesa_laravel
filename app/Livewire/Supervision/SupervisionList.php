@@ -12,7 +12,8 @@ use Livewire\WithPagination;
 
 class SupervisionList extends Component
 {
-    use WithPagination, WithSweetAlert;
+    use WithPagination;
+    use WithSweetAlert;
 
     public string $search = '';
     public string $status = '';
@@ -40,7 +41,7 @@ class SupervisionList extends Component
     public function getSchoolsProperty()
     {
         $query = School::orderBy('name');
-        
+
         if (auth()->user()->isSupervisor()) {
             $assignedSchoolIds = auth()->user()->assignedSchools()->pluck('school.id');
             $query->whereIn('id', $assignedSchoolIds);
@@ -67,24 +68,29 @@ class SupervisionList extends Component
     #[On('doDeleteSupervision')]
     public function deleteSupervision()
     {
-        if (!$this->deleteId) return;
-        
+        if (! $this->deleteId) {
+            return;
+        }
+
         $supervision = Supervision::find($this->deleteId);
-        if (!$supervision) {
+        if (! $supervision) {
             $this->deleteId = null;
+
             return;
         }
 
         // Only allow deletion of drafts by the owner or admin
-        if ($supervision->status !== SupervisionStatus::DRAFT && !auth()->user()->isAdmin()) {
+        if ($supervision->status !== SupervisionStatus::DRAFT && ! auth()->user()->isAdmin()) {
             $this->swalError('ไม่สามารถลบการนิเทศที่ส่งแล้วได้');
             $this->deleteId = null;
+
             return;
         }
 
-        if (!auth()->user()->isAdmin() && $supervision->userId !== auth()->id()) {
+        if (! auth()->user()->isAdmin() && $supervision->userId !== auth()->id()) {
             $this->swalError('คุณไม่มีสิทธิ์ลบการนิเทศนี้');
             $this->deleteId = null;
+
             return;
         }
 

@@ -196,26 +196,54 @@
                 <h3 class="text-sm font-semibold text-gray-900 mb-4">ไฟล์แนบ</h3>
                 <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
                     @foreach($supervision->attachments as $attachment)
+                        @php
+                            $fileUrl = $attachment->getUrl();
+                            $fileExists = $attachment->fileExists();
+                        @endphp
                         <div class="relative group">
-                            @if($attachment->isImage())
-                                <img src="{{ Storage::url($attachment->fileUrl) }}" 
+                            @if($fileExists && $attachment->isImage() && $fileUrl)
+                                <img src="{{ $fileUrl }}" 
                                      alt="{{ $attachment->filename }}"
-                                     class="w-full h-32 object-cover rounded-lg">
+                                     class="w-full h-32 object-cover rounded-lg"
+                                     onerror="this.onerror=null; this.src='{{ asset('images/file-not-found.png') }}';">
                             @else
-                                <div class="w-full h-32 rounded-lg bg-gray-100 flex items-center justify-center">
-                                    <svg class="h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="1" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-                                    </svg>
+                                <div class="w-full h-32 rounded-lg {{ $fileExists ? 'bg-gray-100' : 'bg-red-50 border-2 border-red-200' }} flex items-center justify-center">
+                                    @if(!$fileExists)
+                                        <div class="text-center">
+                                            <svg class="h-8 w-8 text-red-400 mx-auto mb-1" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                                            </svg>
+                                            <p class="text-xs text-red-600 font-medium">ไฟล์ไม่พบ</p>
+                                        </div>
+                                    @else
+                                        <svg class="h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="1" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                                        </svg>
+                                    @endif
                                 </div>
                             @endif
-                            <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 rounded-lg transition-all flex items-center justify-center">
-                                <a href="{{ Storage::url($attachment->fileUrl) }}" 
-                                   target="_blank"
-                                   class="opacity-0 group-hover:opacity-100 inline-flex items-center rounded-lg bg-white px-3 py-2 text-xs font-medium text-gray-700 shadow-sm transition-opacity">
-                                    ดาวน์โหลด
-                                </a>
+                            @if($fileExists && $fileUrl)
+                                <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 rounded-lg transition-all flex items-center justify-center">
+                                    <a href="{{ $fileUrl }}" 
+                                       target="_blank"
+                                       class="opacity-0 group-hover:opacity-100 inline-flex items-center rounded-lg bg-white px-3 py-2 text-xs font-medium text-gray-700 shadow-sm transition-opacity">
+                                        <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+                                        </svg>
+                                        ดาวน์โหลด
+                                    </a>
+                                </div>
+                            @endif
+                            <div class="mt-2">
+                                <p class="text-xs text-gray-500 truncate" title="{{ $attachment->filename }}">
+                                    {{ $attachment->filename }}
+                                </p>
+                                @if($fileExists)
+                                    <p class="text-xs text-gray-400 mt-0.5">{{ $attachment->fileSizeFormatted }}</p>
+                                @else
+                                    <p class="text-xs text-red-500 mt-0.5">ไฟล์หายไป</p>
+                                @endif
                             </div>
-                            <p class="mt-2 text-xs text-gray-500 truncate">{{ $attachment->filename }}</p>
                         </div>
                     @endforeach
                 </div>

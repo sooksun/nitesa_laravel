@@ -12,7 +12,7 @@ enum SupervisionStatus: string
 
     public function label(): string
     {
-        return match($this) {
+        return match ($this) {
             self::DRAFT => 'ร่าง',
             self::SUBMITTED => 'ส่งแล้ว',
             self::APPROVED => 'อนุมัติแล้ว',
@@ -23,7 +23,7 @@ enum SupervisionStatus: string
 
     public function color(): string
     {
-        return match($this) {
+        return match ($this) {
             self::DRAFT => 'gray',
             self::SUBMITTED => 'yellow',
             self::APPROVED => 'blue',
@@ -34,7 +34,7 @@ enum SupervisionStatus: string
 
     public function bgClass(): string
     {
-        return match($this) {
+        return match ($this) {
             self::DRAFT => 'bg-gray-100 text-gray-800',
             self::SUBMITTED => 'bg-yellow-100 text-yellow-800',
             self::APPROVED => 'bg-blue-100 text-blue-800',

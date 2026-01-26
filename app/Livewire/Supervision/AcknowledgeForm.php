@@ -41,9 +41,9 @@ class AcknowledgeForm extends Component
         $this->validate();
 
         Acknowledgement::create([
-            'supervision_id' => $this->supervision->id,
-            'acknowledged_by' => $this->acknowledged_by,
-            'acknowledged_at' => now(),
+            'supervisionId' => $this->supervision->id,
+            'acknowledgedBy' => $this->acknowledged_by,
+            'acknowledgedAt' => now(),
             'comment' => $this->comment ?: null,
         ]);
 

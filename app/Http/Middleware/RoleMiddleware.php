@@ -17,21 +17,21 @@ class RoleMiddleware
      */
     public function handle(Request $request, Closure $next, string ...$roles): Response
     {
-        if (!$request->user()) {
+        if (! $request->user()) {
             return redirect()->route('login');
         }
 
         $userRole = $request->user()->role;
 
-        // Convert string roles to Role enum if needed
-        $allowedRoles = array_map(function ($role) {
-            return $role instanceof Role ? $role : Role::from($role);
+        // Convert string roles to Role enum
+        $allowedRoles = array_map(function (string $role): Role {
+            return Role::from($role);
         }, $roles);
 
-        if (!in_array($userRole, $allowedRoles)) {
+        if (! in_array($userRole, $allowedRoles)) {
             if ($request->expectsJson()) {
                 return response()->json([
-                    'message' => 'คุณไม่มีสิทธิ์เข้าถึงหน้านี้'
+                    'message' => 'คุณไม่มีสิทธิ์เข้าถึงหน้านี้',
                 ], 403);
             }
 

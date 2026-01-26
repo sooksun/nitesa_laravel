@@ -8,7 +8,7 @@ trait WithSweetAlert
     {
         $this->dispatch('swal:success', [
             'title' => $title,
-            'text' => $text
+            'text' => $text,
         ]);
     }
 
@@ -16,7 +16,7 @@ trait WithSweetAlert
     {
         $this->dispatch('swal:error', [
             'title' => $title,
-            'text' => $text
+            'text' => $text,
         ]);
     }
 
@@ -24,7 +24,7 @@ trait WithSweetAlert
     {
         $this->dispatch('swal:info', [
             'title' => $title,
-            'text' => $text
+            'text' => $text,
         ]);
     }
 
@@ -42,7 +42,7 @@ trait WithSweetAlert
             'icon' => $icon,
             'confirmButtonText' => $confirmButtonText,
             'confirmButtonColor' => $confirmButtonColor,
-            'onConfirmed' => $onConfirmed
+            'onConfirmed' => $onConfirmed,
         ]);
     }
 

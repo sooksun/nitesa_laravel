@@ -17,8 +17,8 @@ class School extends Model
     protected $keyType = 'string';
     public $incrementing = false;
 
-    const CREATED_AT = 'createdAt';
-    const UPDATED_AT = 'updatedAt';
+    public const CREATED_AT = 'createdAt';
+    public const UPDATED_AT = 'updatedAt';
 
     protected $fillable = [
         'code',
@@ -50,7 +50,6 @@ class School extends Model
             }
         });
     }
-
 
     public function networkGroupRelation(): BelongsTo
     {

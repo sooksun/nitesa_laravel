@@ -19,13 +19,13 @@ class EnsureSchoolAccess
         $user = $request->user();
         $schoolId = $request->route('school') ?? $request->input('school_id');
 
-        if (!$schoolId) {
+        if (! $schoolId) {
             return $next($request);
         }
 
         $school = $schoolId instanceof School ? $schoolId : School::find($schoolId);
 
-        if (!$school) {
+        if (! $school) {
             if ($request->expectsJson()) {
                 return response()->json(['message' => 'ไม่พบโรงเรียน'], 404);
             }
@@ -44,7 +44,7 @@ class EnsureSchoolAccess
 
         // Supervisor can only access assigned schools
         if ($user->role === Role::SUPERVISOR) {
-            if (!$user->assignedSchools()->where('schools.id', $school->id)->exists()) {
+            if (! $user->assignedSchools()->where('schools.id', $school->id)->exists()) {
                 if ($request->expectsJson()) {
                     return response()->json(['message' => 'คุณไม่มีสิทธิ์เข้าถึงโรงเรียนนี้'], 403);
                 }

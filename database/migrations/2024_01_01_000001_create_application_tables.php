@@ -4,8 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     public function up(): void
     {
         // Network Group table
@@ -27,6 +26,8 @@ return new class extends Migration
             $table->string('role')->default('SUPERVISOR'); // ADMIN, SUPERVISOR, SCHOOL, EXECUTIVE
             $table->string('image')->nullable();
             $table->string('googleId')->nullable();
+            $table->string('avatar')->nullable(); // Google avatar URL
+            $table->boolean('isActive')->default(true);
             $table->timestamp('createdAt')->nullable();
             $table->timestamp('updatedAt')->nullable();
         });

@@ -4,14 +4,14 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\School;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class SchoolController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $query = School::with(['networkGroup'])
+        $query = School::with(['networkGroupRelation'])
             ->withCount('supervisions');
 
         if ($request->has('search')) {
@@ -66,7 +66,7 @@ class SchoolController extends Controller
 
     public function show(School $school): JsonResponse
     {
-        $school->load(['networkGroup', 'supervisors']);
+        $school->load(['networkGroupRelation', 'supervisors']);
         $school->loadCount('supervisions');
 
         return response()->json($school);

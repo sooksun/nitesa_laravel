@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\ActivityLogController;
 use App\Http\Controllers\Api\AnalyticsController;
 use App\Http\Controllers\Api\PolicyController;
 use App\Http\Controllers\Api\SchoolController;
@@ -46,5 +47,16 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/academic-years', [AnalyticsController::class, 'academicYears']);
         Route::get('/districts', [AnalyticsController::class, 'districts']);
         Route::get('/network-groups', [AnalyticsController::class, 'networkGroups']);
+    });
+
+    // Activity Log (Admin and Executive only)
+    Route::prefix('activity-log')->middleware('role:ADMIN,EXECUTIVE')->group(function () {
+        Route::get('/', [ActivityLogController::class, 'index']);
+        Route::get('/stats', [ActivityLogController::class, 'stats']);
+        Route::get('/recent', [ActivityLogController::class, 'recent']);
+        Route::get('/export', [ActivityLogController::class, 'export']);
+        Route::get('/causer/{causerId}', [ActivityLogController::class, 'byCauser']);
+        Route::get('/subject/{subjectType}/{subjectId}', [ActivityLogController::class, 'bySubject']);
+        Route::get('/{activity}', [ActivityLogController::class, 'show']);
     });
 });

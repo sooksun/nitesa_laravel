@@ -13,7 +13,6 @@ use App\Models\School;
 use App\Models\Supervision;
 use App\Models\User;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
@@ -22,7 +21,7 @@ class DatabaseSeeder extends Seeder
     {
         // ตรวจสอบว่ามีข้อมูลหรือไม่
         $hasData = User::count() > 0 || School::count() > 0 || Supervision::count() > 0;
-        
+
         if ($hasData) {
             $this->command->info('Database already has data. Adding demo data...');
             $this->addDemoData();
@@ -81,7 +80,7 @@ class DatabaseSeeder extends Seeder
             'กลุ่มเครือข่ายความปลอดภัยในสถานศึกษา',
             'กลุ่มเครือข่ายพัฒนาครูและบุคลากร',
         ];
-        
+
         for ($i = 0; $i < count($networkGroupNames); $i++) {
             $networkGroups[] = NetworkGroup::create([
                 'code' => sprintf('NG%03d', $i + 1),
@@ -115,11 +114,11 @@ class DatabaseSeeder extends Seeder
         // Create schools
         $districts = ['เมืองสกลนคร', 'กุสุมาลย์', 'กุดบาก', 'คำตากล้า', 'ดงมะไฟ', 'นิคมน้ำอูน', 'บ้านม่วง', 'พรรณานิคม', 'พังโคน', 'ภูพาน', 'วานรนิวาส', 'วาริชภูมิ', 'สว่างแดนดิน', 'ส่องดาว', 'อากาศอำนวย'];
         $schools = [];
-        
+
         for ($i = 1; $i <= 50; $i++) {
             $district = $districts[array_rand($districts)];
             $networkGroup = $networkGroups[array_rand($networkGroups)];
-            
+
             $schools[] = School::create([
                 'code' => sprintf('1044%06d', $i),
                 'name' => "โรงเรียนบ้านทดสอบ {$i}",
@@ -158,15 +157,15 @@ class DatabaseSeeder extends Seeder
         ];
         $levels = [IndicatorLevel::EXCELLENT, IndicatorLevel::GOOD, IndicatorLevel::FAIR, IndicatorLevel::NEEDS_WORK];
         $statuses = [SupervisionStatus::DRAFT, SupervisionStatus::SUBMITTED, SupervisionStatus::APPROVED, SupervisionStatus::PUBLISHED];
-        
+
         $academicYears = ['2567', '2568', '2569'];
-        
+
         for ($i = 0; $i < 30; $i++) {
             $supervisor = $supervisors[array_rand($supervisors)];
             $school = $schools[array_rand($schools)];
             $status = $statuses[array_rand($statuses)];
             $academicYear = $academicYears[array_rand($academicYears)];
-            
+
             $supervision = Supervision::create([
                 'schoolId' => $school->id,
                 'userId' => $supervisor->id,
@@ -206,14 +205,14 @@ class DatabaseSeeder extends Seeder
         // เพิ่มข้อมูล demo ถ้ายังมีน้อย
         $currentSupervisions = Supervision::count();
         $targetSupervisions = 50; // เป้าหมาย 50 รายการ
-        
+
         if ($currentSupervisions < $targetSupervisions) {
             $this->command->info("Current supervisions: {$currentSupervisions}. Adding more to reach {$targetSupervisions}...");
-            
+
             $supervisors = User::where('role', Role::SUPERVISOR)->get();
             $schools = School::all();
             $policies = Policy::where('isActive', true)->get();
-            
+
             if ($supervisors->isEmpty()) {
                 $this->command->info('Creating supervisor users...');
                 for ($i = 1; $i <= 3; $i++) {
@@ -226,7 +225,7 @@ class DatabaseSeeder extends Seeder
                 }
                 $supervisors = User::where('role', Role::SUPERVISOR)->get();
             }
-            
+
             if ($schools->isEmpty()) {
                 $this->command->info('Creating schools...');
                 $networkGroups = NetworkGroup::all();
@@ -240,7 +239,7 @@ class DatabaseSeeder extends Seeder
                     }
                     $networkGroups = NetworkGroup::all();
                 }
-                
+
                 $districts = ['เมืองสกลนคร', 'กุสุมาลย์', 'กุดบาก', 'คำตากล้า', 'ดงมะไฟ'];
                 for ($i = 1; $i <= 50; $i++) {
                     School::create([
@@ -270,16 +269,16 @@ class DatabaseSeeder extends Seeder
             $levels = [IndicatorLevel::EXCELLENT, IndicatorLevel::GOOD, IndicatorLevel::FAIR, IndicatorLevel::NEEDS_WORK];
             $statuses = [SupervisionStatus::DRAFT, SupervisionStatus::SUBMITTED, SupervisionStatus::APPROVED, SupervisionStatus::PUBLISHED];
             $academicYears = ['2567', '2568', '2569'];
-            
+
             $toCreate = $targetSupervisions - $currentSupervisions;
             $this->command->info("Creating {$toCreate} more supervisions...");
-            
+
             for ($i = 0; $i < $toCreate; $i++) {
                 $supervisor = $supervisors->random();
                 $school = $schools->random();
                 $status = $statuses[array_rand($statuses)];
                 $academicYear = $academicYears[array_rand($academicYears)];
-                
+
                 $supervision = Supervision::create([
                     'schoolId' => $school->id,
                     'userId' => $supervisor->id,
@@ -305,19 +304,19 @@ class DatabaseSeeder extends Seeder
                     ]);
                 }
             }
-            
+
             $this->command->info("Created {$toCreate} supervisions with indicators!");
         }
 
         // เพิ่มโรงเรียนถ้ายังมีน้อย
         $currentSchools = School::count();
         $targetSchools = 200; // เป้าหมาย 200 โรงเรียน
-        
+
         if ($currentSchools < $targetSchools) {
             $this->command->info("Current schools: {$currentSchools}. Adding more to reach {$targetSchools}...");
             $networkGroups = NetworkGroup::all();
             $districts = ['เมืองสกลนคร', 'กุสุมาลย์', 'กุดบาก', 'คำตากล้า', 'ดงมะไฟ', 'นิคมน้ำอูน', 'บ้านม่วง', 'พรรณานิคม', 'พังโคน', 'ภูพาน', 'วานรนิวาส', 'วาริชภูมิ', 'สว่างแดนดิน', 'ส่องดาว', 'อากาศอำนวย'];
-            
+
             if ($networkGroups->isEmpty()) {
                 $networkGroupNames = [
                     'กลุ่มเครือข่ายพัฒนาคุณภาพการศึกษา',
@@ -335,11 +334,11 @@ class DatabaseSeeder extends Seeder
                 }
                 $networkGroups = NetworkGroup::all();
             }
-            
+
             $toCreate = $targetSchools - $currentSchools;
             $this->command->info("Creating {$toCreate} more schools...");
-            
-            $maxCode = School::max('code') ? (int)substr(School::max('code'), -6) : 0;
+
+            $maxCode = School::max('code') ? (int) substr(School::max('code'), -6) : 0;
             for ($i = 1; $i <= $toCreate; $i++) {
                 $newCode = $maxCode + $i;
                 School::create([
@@ -359,7 +358,7 @@ class DatabaseSeeder extends Seeder
             }
             $this->command->info("Created {$toCreate} schools!");
         }
-        
+
         // Assign schools to supervisors if not assigned
         $supervisors = User::where('role', Role::SUPERVISOR)->get();
         foreach ($supervisors as $supervisor) {

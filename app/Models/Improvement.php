@@ -15,8 +15,8 @@ class Improvement extends Model
     protected $keyType = 'string';
     public $incrementing = false;
 
-    const CREATED_AT = 'createdAt';
-    const UPDATED_AT = 'updatedAt';
+    public const CREATED_AT = 'createdAt';
+    public const UPDATED_AT = 'updatedAt';
 
     protected $fillable = [
         'schoolId',
@@ -36,7 +36,6 @@ class Improvement extends Model
             }
         });
     }
-
 
     public function school(): BelongsTo
     {
