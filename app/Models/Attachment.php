@@ -118,6 +118,7 @@ class Attachment extends Model
 
         try {
             $disk = $this->getStorageDisk();
+
             return Storage::disk($disk)->exists($this->fileUrl);
         } catch (\Exception $e) {
             Log::warning("Failed to check file existence for attachment {$this->id}", [
@@ -201,6 +202,7 @@ class Attachment extends Model
 
         try {
             $disk = $this->getStorageDisk();
+
             return route('attachments.download', $this->id);
         } catch (\Exception $e) {
             Log::error("Failed to get download URL for attachment", [

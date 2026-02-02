@@ -6,8 +6,8 @@ $app = require_once __DIR__ . '/bootstrap/app.php';
 $app->make(\Illuminate\Contracts\Console\Kernel::class)->bootstrap();
 
 use App\Models\User;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 
 echo "========================================\n";
 echo "  Testing Login Credentials\n";
@@ -19,7 +19,7 @@ $password = 'password';
 // ตรวจสอบ user
 $user = User::where('email', $email)->first();
 
-if (!$user) {
+if (! $user) {
     echo "❌ User not found!\n";
     echo "Creating user...\n";
     $user = User::create([
@@ -64,20 +64,20 @@ if ($attempt) {
 } else {
     echo "❌ Login will fail. Checking issues...\n";
     echo "\n";
-    
+
     // ตรวจสอบ password hash
     echo "Password Hash Info:\n";
     echo "  Stored hash: " . substr($user->password, 0, 20) . "...\n";
     echo "  Hash length: " . strlen($user->password) . "\n";
     echo "  Is bcrypt: " . (str_starts_with($user->password, '$2y$') ? 'Yes' : 'No') . "\n";
     echo "\n";
-    
+
     // ลองรีเซ็ตรหัสผ่านใหม่
     echo "Resetting password...\n";
     $user->password = Hash::make($password);
     $user->isActive = true;
     $user->save();
-    
+
     echo "✅ Password reset!\n";
     echo "Try logging in again.\n";
 }

@@ -346,18 +346,18 @@ class DashboardSummary extends Component
     public static function clearCache(?string $academicYear = null): void
     {
         $tags = ['dashboard'];
-        
+
         if ($academicYear) {
             $tags[] = "dashboard.{$academicYear}";
         }
 
         // Clear all dashboard related cache
         Cache::tags($tags)->flush();
-        
+
         // Also clear specific keys
         Cache::forget('dashboard.academic_years');
         Cache::forget('dashboard.yearly_trend');
-        
+
         if ($academicYear) {
             $patterns = [
                 "dashboard.stats.*.{$academicYear}",
@@ -369,7 +369,7 @@ class DashboardSummary extends Component
                 "dashboard.district.{$academicYear}",
                 "dashboard.supervisor_performance.{$academicYear}",
             ];
-            
+
             foreach ($patterns as $pattern) {
                 // Note: Laravel doesn't support wildcard cache deletion
                 // You may need to use Redis or implement custom cache clearing

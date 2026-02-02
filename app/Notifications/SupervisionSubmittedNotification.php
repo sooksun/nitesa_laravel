@@ -29,12 +29,12 @@ class SupervisionSubmittedNotification extends Notification implements ShouldQue
     public function via(object $notifiable): array
     {
         $channels = ['mail', 'database'];
-        
+
         // เพิ่ม SMS channel ถ้ามีเบอร์โทรศัพท์
         // if ($notifiable->phone) {
         //     $channels[] = 'nexmo'; // หรือ 'vonage' หรือ SMS provider อื่น ๆ
         // }
-        
+
         return $channels;
     }
 
@@ -45,7 +45,7 @@ class SupervisionSubmittedNotification extends Notification implements ShouldQue
     {
         $url = route('supervisions.show', $this->supervision->id);
 
-        return (new MailMessage)
+        return (new MailMessage())
             ->subject('มีการส่งการนิเทศเพื่อขออนุมัติ - ' . $this->supervision->school->name)
             ->greeting('สวัสดีครับ/ค่ะ คุณ' . $notifiable->name)
             ->line('มีการส่งการนิเทศใหม่เพื่อขออนุมัติจากคุณ')

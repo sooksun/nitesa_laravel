@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Enums\SupervisionStatus;
 use App\Models\Indicator;
 use App\Models\Supervision;
 use Illuminate\Database\Eloquent\Collection;
@@ -96,6 +95,13 @@ class SupervisionService
      */
     protected function syncIndicators(Supervision $supervision, array $indicators): void
     {
+        // Empty array = remove all indicators (explicit handling for Laravel whereNotIn([], …))
+        if (empty($indicators)) {
+            $supervision->indicators()->delete();
+
+            return;
+        }
+
         $existingIds = [];
 
         foreach ($indicators as $indicatorData) {
@@ -125,7 +131,7 @@ class SupervisionService
             }
         }
 
-        // Delete removed indicators
+        // Delete indicators that were removed from the form
         $supervision->indicators()
             ->whereNotIn('id', $existingIds)
             ->delete();

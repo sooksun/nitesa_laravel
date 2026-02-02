@@ -13,7 +13,6 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 
@@ -69,7 +68,7 @@ class SupervisionForm extends Component
             'areaPolicyId' => ['nullable', 'exists:policy,id'],
             'summary' => ['required', 'string'],
             'suggestions' => ['required', 'string'],
-            'indicators' => ['array'],
+            'indicators' => ['required', 'array', 'min:1'],
             'indicators.*.name' => ['required', 'string'],
             'indicators.*.level' => ['required', 'in:EXCELLENT,GOOD,FAIR,NEEDS_WORK'],
             'indicators.*.comment' => ['nullable', 'string'],
@@ -82,11 +81,25 @@ class SupervisionForm extends Component
         'date.required' => 'กรุณาระบุวันที่',
         'summary.required' => 'กรุณาระบุสรุปผลการนิเทศ',
         'suggestions.required' => 'กรุณาระบุข้อเสนอแนะ',
+        'indicators.required' => 'กรุณาเพิ่มตัวชี้วัดอย่างน้อย 1 รายการ',
+        'indicators.min' => 'กรุณาเพิ่มตัวชี้วัดอย่างน้อย 1 รายการ',
     ];
 
     public function mount(?Supervision $supervision = null)
     {
         if ($supervision && $supervision->exists) {
+            $user = auth()->user();
+            $canEdit = $user->isAdmin()
+                || ($user->isSupervisor() && $supervision->userId === $user->id);
+            $editableStatus = in_array($supervision->status, [
+                \App\Enums\SupervisionStatus::DRAFT,
+                \App\Enums\SupervisionStatus::NEEDS_IMPROVEMENT,
+            ], true);
+
+            if (! $canEdit || ! $editableStatus) {
+                abort(403, 'คุณไม่มีสิทธิ์แก้ไขการนิเทศนี้');
+            }
+
             $this->supervision = $supervision;
             $this->editing = true;
 

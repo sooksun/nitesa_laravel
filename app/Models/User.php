@@ -153,6 +153,30 @@ class User extends Authenticatable
     }
 
     /**
+     * Check if user can access (view) a specific supervision.
+     *
+     * @param \App\Models\Supervision $supervision Supervision to check
+     * @return bool
+     */
+    public function canAccessSupervision(\App\Models\Supervision $supervision): bool
+    {
+        if ($this->isAdmin() || $this->isExecutive()) {
+            return true;
+        }
+
+        if ($this->isSupervisor()) {
+            return $supervision->userId === $this->id
+                || $this->assignedSchools()->where('schools.id', $supervision->schoolId)->exists();
+        }
+
+        if ($this->isSchool()) {
+            return $supervision->status === \App\Enums\SupervisionStatus::PUBLISHED;
+        }
+
+        return false;
+    }
+
+    /**
      * Scope a query to only include active users.
      *
      * @param Builder $query

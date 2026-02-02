@@ -5,8 +5,8 @@ require __DIR__ . '/vendor/autoload.php';
 $app = require_once __DIR__ . '/bootstrap/app.php';
 $app->make(\Illuminate\Contracts\Console\Kernel::class)->bootstrap();
 
-use App\Models\User;
 use App\Enums\Role;
+use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 
 // ตรวจสอบว่ามี admin user หรือไม่
@@ -27,7 +27,7 @@ if ($admin) {
 } else {
     echo "❌ ไม่พบ admin user\n";
     echo "กำลังสร้าง admin user...\n";
-    
+
     $admin = User::create([
         'name' => 'ผู้ดูแลระบบ',
         'email' => 'admin@nitesa.local',
@@ -35,7 +35,7 @@ if ($admin) {
         'role' => Role::ADMIN,
         'isActive' => true,
     ]);
-    
+
     echo "✅ สร้าง admin user สำเร็จ!\n";
     echo "Email: {$admin->email}\n";
     echo "Password: password\n";

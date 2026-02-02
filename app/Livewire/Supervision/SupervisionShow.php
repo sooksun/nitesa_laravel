@@ -13,6 +13,11 @@ class SupervisionShow extends Component
 
     public function mount(Supervision $supervision)
     {
+        $user = auth()->user();
+        if (! $user || ! $user->canAccessSupervision($supervision)) {
+            abort(403, 'คุณไม่มีสิทธิ์เข้าถึงการนิเทศนี้');
+        }
+
         $this->supervision = $supervision->load([
             'school.networkGroupRelation',
             'user',

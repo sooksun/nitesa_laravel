@@ -3,17 +3,29 @@
 namespace App\Http\Controllers;
 
 use App\Models\Attachment;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AttachmentController extends Controller
 {
+    /**
+     * Ensure the authenticated user can access this attachment's supervision.
+     */
+    protected function authorizeAttachment(Attachment $attachment): void
+    {
+        $attachment->loadMissing('supervision');
+
+        if (! $attachment->supervision || ! auth()->user()?->canAccessSupervision($attachment->supervision)) {
+            abort(403, 'คุณไม่มีสิทธิ์เข้าถึงไฟล์นี้');
+        }
+    }
+
     /**
      * Download an attachment file
      */
     public function download(Attachment $attachment)
     {
+        $this->authorizeAttachment($attachment);
+
         // Check if file exists
         if (! $attachment->fileExists()) {
             abort(404, 'ไฟล์ไม่พบในระบบ');
@@ -50,6 +62,8 @@ class AttachmentController extends Controller
      */
     public function view(Attachment $attachment)
     {
+        $this->authorizeAttachment($attachment);
+
         // Check if file exists
         if (! $attachment->fileExists()) {
             abort(404, 'ไฟล์ไม่พบในระบบ');

@@ -30,12 +30,12 @@ class SupervisionApprovedNotification extends Notification implements ShouldQueu
     public function via(object $notifiable): array
     {
         $channels = ['mail', 'database'];
-        
+
         // เพิ่ม SMS channel ถ้ามีเบอร์โทรศัพท์
         // if ($notifiable->phone) {
         //     $channels[] = 'nexmo';
         // }
-        
+
         return $channels;
     }
 
@@ -46,7 +46,7 @@ class SupervisionApprovedNotification extends Notification implements ShouldQueu
     {
         $url = route('supervisions.show', $this->supervision->id);
 
-        return (new MailMessage)
+        return (new MailMessage())
             ->subject('การนิเทศได้รับการอนุมัติแล้ว - ' . $this->supervision->school->name)
             ->greeting('สวัสดีครับ/ค่ะ คุณ' . $notifiable->name)
             ->line('การนิเทศของคุณได้รับการอนุมัติแล้ว')

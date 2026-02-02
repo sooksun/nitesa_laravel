@@ -39,6 +39,16 @@
         }
     },
     "scripts": {
+        "lint": [
+            "@lint:php",
+            "@lint:stan"
+        ],
+        "lint:php": "php-cs-fixer fix",
+        "lint:php:check": "php-cs-fixer fix --dry-run --diff",
+        "lint:stan": "phpstan analyse --memory-limit=512M",
+        "lint:fix": "php-cs-fixer fix",
+        "format": "php-cs-fixer fix",
+        "format:check": "php-cs-fixer fix --dry-run --diff",
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
             "@php artisan package:discover --ansi"
