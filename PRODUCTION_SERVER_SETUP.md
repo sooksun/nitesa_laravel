@@ -25,7 +25,7 @@
 
 ```bash
 # บน production server
-cd /path/to/nitesa2
+cd /DATA/AppData/www/nitesa
 
 # Backup .env เดิม
 cp .env .env.backup
@@ -49,8 +49,8 @@ APP_URL=http://203.172.184.47:9000
 
 # Database (ปรับตาม server จริง)
 DB_DATABASE=nitesa
-DB_USERNAME=root
-DB_PASSWORD=your_password
+DB_USERNAME=tok
+DB_PASSWORD=l6-lyo9N
 
 # Mail (ปรับตาม mail server)
 MAIL_HOST=smtp.gmail.com

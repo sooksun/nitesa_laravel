@@ -18,19 +18,21 @@
         body {
             font-family: 'Sarabun', 'Prompt', sans-serif;
         }
+        .mourning-ribbon {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100px;
+            height: 100px;
+            z-index: 9999;
+            pointer-events: none;
+        }
     </style>
 </head>
 <body class="h-full antialiased bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
     <!-- Mourning Ribbon -->
     <div class="mourning-ribbon">
-        <svg viewBox="0 0 100 100" class="w-full h-full">
-            <polygon points="0,0 100,0 0,100" fill="#1a1a1a"/>
-            <g transform="translate(25, 25) rotate(-45)">
-                <ellipse cx="10" cy="20" rx="8" ry="15" fill="#2a2a2a"/>
-                <ellipse cx="20" cy="20" rx="8" ry="15" fill="#2a2a2a"/>
-                <rect x="12" y="20" width="6" height="25" fill="#2a2a2a"/>
-            </g>
-        </svg>
+        <img src="{{ asset('black-ribbon.png') }}" alt="Mourning Ribbon" class="w-full h-full object-contain">
     </div>
 
     <div class="min-h-full flex items-center justify-center p-4">
