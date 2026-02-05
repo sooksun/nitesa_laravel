@@ -20,18 +20,18 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', fn(Request $request) => $request->user());
 
     // Schools
-    Route::apiResource('schools', SchoolController::class);
-    Route::get('/schools/{school}/supervisions', [SchoolController::class, 'supervisions']);
+    Route::apiResource('schools', SchoolController::class)->names('api.schools');
+    Route::get('/schools/{school}/supervisions', [SchoolController::class, 'supervisions'])->name('api.schools.supervisions');
 
     // Users
-    Route::apiResource('users', UserController::class);
-    Route::post('/users/{user}/assign-schools', [UserController::class, 'assignSchools']);
+    Route::apiResource('users', UserController::class)->names('api.users');
+    Route::post('/users/{user}/assign-schools', [UserController::class, 'assignSchools'])->name('api.users.assign-schools');
 
     // Policies
-    Route::apiResource('policies', PolicyController::class);
+    Route::apiResource('policies', PolicyController::class)->names('api.policies');
 
     // Supervisions
-    Route::apiResource('supervisions', SupervisionController::class);
+    Route::apiResource('supervisions', SupervisionController::class)->names('api.supervisions');
     Route::post('/supervisions/{supervision}/submit', [SupervisionController::class, 'submit']);
     Route::post('/supervisions/{supervision}/approve', [SupervisionController::class, 'approve']);
     Route::post('/supervisions/{supervision}/reject', [SupervisionController::class, 'reject']);
