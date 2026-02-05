@@ -133,41 +133,137 @@ resources/views/
 - 📊 [คู่มือ Performance Optimization (PERFORMANCE_OPTIMIZATION.md)](./PERFORMANCE_OPTIMIZATION.md)
 - 📈 [รายงาน Code Quality (CODE_QUALITY_IMPROVEMENTS.md)](./CODE_QUALITY_IMPROVEMENTS.md)
 
-## 🚀 Production Deployment
+## 🚀 Production Deployment (Docker)
 
-### สำหรับ Server: http://203.172.184.47:9000/
+### สำหรับ Server: https://nitesa.cnppai.com/
 
-**Quick Setup:**
+**ข้อกำหนด:**
+- Ubuntu 24.04 LTS
+- Docker & Docker Compose
+- MySQL/MariaDB (Host หรือ Container)
+
+### Quick Install on Server
+
 ```bash
-# 1. Run production setup script
-chmod +x production-setup.sh
-./production-setup.sh
+# 1. Clone repository
+cd /DATA/AppData/www
+git clone https://github.com/sooksun/nitesa_laravel.git nitesa
+cd nitesa
 
-# 2. Review and update .env
-nano .env
+# 2. สร้างไฟล์ .env
+cat > .env << 'EOF'
+APP_NAME="ระบบนิเทศการศึกษา"
+APP_ENV=production
+APP_KEY=
+APP_DEBUG=false
+APP_URL=https://nitesa.cnppai.com
+ASSET_URL=https://nitesa.cnppai.com
 
-# 3. Test the application
-# Visit: http://203.172.184.47:9000/
+LOG_CHANNEL=stack
+LOG_LEVEL=error
+
+DB_CONNECTION=mysql
+DB_HOST=192.168.1.4
+DB_PORT=3306
+DB_DATABASE=nitesa
+DB_USERNAME=tok
+DB_PASSWORD=your_password
+
+SESSION_DRIVER=redis
+SESSION_LIFETIME=120
+CACHE_DRIVER=redis
+QUEUE_CONNECTION=redis
+REDIS_HOST=redis
+REDIS_PORT=6379
+
+FILESYSTEM_DISK=public
+EOF
+
+# 3. Generate APP_KEY
+php artisan key:generate
+# หรือ
+APP_KEY=$(openssl rand -base64 32)
+sed -i "s/APP_KEY=/APP_KEY=base64:$APP_KEY/" .env
+
+# 4. Build และ Start Docker containers
+docker compose up -d --build
+
+# 5. หลัง build เสร็จ - ติดตั้ง dependencies และ build assets ใน container
+docker compose exec app composer install --no-dev --optimize-autoloader
+docker compose exec app npm ci
+docker compose exec app npm run build
+
+# 6. แก้ไข permissions
+docker compose exec app chown -R www-data:www-data /var/www/html/storage
+docker compose exec app chown -R www-data:www-data /var/www/html/bootstrap/cache
+docker compose exec app chmod -R 775 /var/www/html/storage
+docker compose exec app chmod -R 775 /var/www/html/bootstrap/cache
+
+# 7. Run migrations
+docker compose exec app php artisan migrate --force
+
+# 8. Publish Livewire assets
+docker compose exec app php artisan livewire:publish --assets
+
+# 9. Optimize Laravel
+docker compose exec app php artisan optimize
+docker compose exec app php artisan view:cache
+
+# 10. Restart containers
+docker compose restart
 ```
 
-**เอกสาร:**
-- 📖 [คู่มือการตั้งค่า Production Server (PRODUCTION_SERVER_SETUP.md)](./PRODUCTION_SERVER_SETUP.md) - สำหรับ server นี้โดยเฉพาะ
-- 📖 [คู่มือ Production Deployment แบบเต็ม (PRODUCTION_DEPLOYMENT.md)](./PRODUCTION_DEPLOYMENT.md) - สำหรับ production ทั่วไป
+### อัพเดทโค้ดบน Server
 
-### สำหรับ Production Server อื่นๆ
-
-**Quick Start:**
 ```bash
-# 1. Copy production environment file
-cp .env.production.example .env
+cd /DATA/AppData/www/nitesa
 
-# 2. Edit .env with production values
-nano .env
+# Pull latest code
+git pull origin main
 
-# 3. Run deployment script
-chmod +x deploy.sh
-./deploy.sh
+# Rebuild assets (ถ้ามีการเปลี่ยนแปลง frontend)
+docker compose exec app npm ci
+docker compose exec app npm run build
+
+# Clear caches
+docker compose exec app php artisan optimize:clear
+docker compose exec app php artisan optimize
+docker compose exec app php artisan view:cache
+
+# Restart
+docker compose restart
 ```
+
+### Docker Services
+
+| Service | Port | Description |
+|---------|------|-------------|
+| nginx | 9000 | Web Server (เชื่อมต่อผ่าน Nginx Proxy Manager) |
+| app | - | PHP-FPM 8.3 |
+| redis | - | Cache & Session |
+| queue | - | Laravel Queue Worker |
+
+### Troubleshooting
+
+```bash
+# ดู logs
+docker compose logs app --tail 50
+docker compose exec app tail -50 storage/logs/laravel.log
+
+# Restart all containers
+docker compose restart
+
+# Rebuild containers
+docker compose down
+docker compose up -d --build
+
+# เข้าไปใน container
+docker compose exec app sh
+```
+
+**เอกสารเพิ่มเติม:**
+- 📖 [คู่มือการตั้งค่า Production Server (PRODUCTION_SERVER_SETUP.md)](./PRODUCTION_SERVER_SETUP.md)
+- 📖 [คู่มือ Production Deployment แบบเต็ม (PRODUCTION_DEPLOYMENT.md)](./PRODUCTION_DEPLOYMENT.md)
 
 ## License
 
