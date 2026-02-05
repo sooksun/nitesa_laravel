@@ -114,14 +114,33 @@ class ImportIndex extends Component
             throw new \Exception('ข้อมูลไม่ครบถ้วน (ต้องมี code, title และ type)');
         }
 
+        // Handle isActive - convert string TRUE/FALSE to boolean
+        $isActive = true;
+        if (isset($data['isActive'])) {
+            $isActive = $this->parseBoolean($data['isActive']);
+        } elseif (isset($data['is_active'])) {
+            $isActive = $this->parseBoolean($data['is_active']);
+        }
+
         Policy::updateOrCreate(
             ['code' => $data['code'], 'type' => $data['type']],
             [
                 'title' => $data['title'],
                 'description' => $data['description'] ?? null,
-                'isActive' => isset($data['isActive']) ? (bool) $data['isActive'] : (isset($data['is_active']) ? (bool) $data['is_active'] : true),
+                'isActive' => $isActive,
             ]
         );
+    }
+
+    private function parseBoolean(mixed $value): bool
+    {
+        if (is_bool($value)) {
+            return $value;
+        }
+        if (is_string($value)) {
+            return in_array(strtoupper(trim($value)), ['TRUE', '1', 'YES', 'Y'], true);
+        }
+        return (bool) $value;
     }
 
     private function importNetworkGroup(array $row, array $headers): void

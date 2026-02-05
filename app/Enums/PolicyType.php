@@ -19,6 +19,7 @@ enum PolicyType: string
     case REDUCE_TEACHER_WORKLOAD = 'REDUCE_TEACHER_WORKLOAD';
     case TEACHER_WELFARE = 'TEACHER_WELFARE';
     case MORAL_QUALITY_LEARNING = 'MORAL_QUALITY_LEARNING';
+    case POLICY_FOCUS_12_AREAS = 'POLICY_FOCUS_12_AREAS';
 
     public function label(): string
     {
@@ -38,6 +39,7 @@ enum PolicyType: string
             self::REDUCE_TEACHER_WORKLOAD => 'การลดภาระงานครู',
             self::TEACHER_WELFARE => 'สวัสดิการครูและบุคลากรทางการศึกษา',
             self::MORAL_QUALITY_LEARNING => 'คุณภาพการเรียนรู้ที่เน้นคุณธรรม',
+            self::POLICY_FOCUS_12_AREAS => 'จุดเน้นนโยบาย 12 ด้าน',
         };
     }
 }
