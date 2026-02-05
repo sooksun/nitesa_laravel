@@ -20,6 +20,7 @@ enum PolicyType: string
     case TEACHER_WELFARE = 'TEACHER_WELFARE';
     case MORAL_QUALITY_LEARNING = 'MORAL_QUALITY_LEARNING';
     case POLICY_FOCUS_12_AREAS = 'POLICY_FOCUS_12_AREAS';
+    case QUICK_WIN_POLICY_FY_2569 = 'QUICK_WIN_POLICY_FY_2569';
 
     public function label(): string
     {
@@ -40,6 +41,7 @@ enum PolicyType: string
             self::TEACHER_WELFARE => 'สวัสดิการครูและบุคลากรทางการศึกษา',
             self::MORAL_QUALITY_LEARNING => 'คุณภาพการเรียนรู้ที่เน้นคุณธรรม',
             self::POLICY_FOCUS_12_AREAS => 'จุดเน้นนโยบาย 12 ด้าน',
+            self::QUICK_WIN_POLICY_FY_2569 => 'นโยบาย Quick Win ปีงบประมาณ 2569',
         };
     }
 }
