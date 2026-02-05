@@ -144,19 +144,27 @@ resources/views/
 
 ---
 
-### 🚀 Quick Install (One Command)
-
-หลังจากสร้าง Database แล้ว สามารถรันคำสั่งนี้ได้เลย:
+### 🚀 Quick Install (Copy & Paste)
 
 ```bash
+# 1. สร้าง Database ก่อน (ใน MySQL)
+mysql -u root -p
+CREATE DATABASE nitesa CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER 'nitesa_user'@'%' IDENTIFIED BY 'your_secure_password';
+GRANT ALL PRIVILEGES ON nitesa.* TO 'nitesa_user'@'%';
+FLUSH PRIVILEGES;
+EXIT;
+
+# 2. Clone และรัน install script
 cd /DATA/AppData/www
 git clone https://github.com/sooksun/nitesa_laravel.git nitesa
 cd nitesa
 
-# แก้ไขค่าใน install.sh ก่อนรัน (DB_HOST, DB_PASS, ADMIN_PASSWORD)
+# 3. แก้ไขค่าใน install.sh
 nano install.sh
+# แก้ไข: DB_HOST, DB_PASS, ADMIN_PASSWORD
 
-# รัน script
+# 4. รัน script
 chmod +x install.sh
 ./install.sh
 ```
@@ -370,6 +378,10 @@ docker compose exec app sh
 ```
 
 **เอกสารเพิ่มเติม:**
+วิธีใช้งานบน Server:
+# 1. สร้าง Database ก่อน (ใน MySQL)mysql -u root -pCREATE DATABASE nitesa CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;CREATE USER 'nitesa_user'@'%' IDENTIFIED BY 'your_secure_password';GRANT ALL PRIVILEGES ON nitesa.* TO 'nitesa_user'@'%';FLUSH PRIVILEGES;EXIT;# 2. Clone และรัน install scriptcd /DATA/AppData/wwwgit clone https://github.com/sooksun/nitesa_laravel.git nitesacd nitesa# 3. แก้ไขค่าใน install.shnano install.sh# แก้ไข: DB_HOST, DB_PASS, ADMIN_PASSWORD# 4. รัน scriptchmod +x install.sh./install.sh
+
+
 - 📖 [คู่มือการตั้งค่า Production Server (PRODUCTION_SERVER_SETUP.md)](./PRODUCTION_SERVER_SETUP.md)
 - 📖 [คู่มือ Production Deployment แบบเต็ม (PRODUCTION_DEPLOYMENT.md)](./PRODUCTION_DEPLOYMENT.md)
 
