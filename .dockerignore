@@ -1,0 +1,49 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+
+# Dependencies (will be installed in container)
+/vendor
+/node_modules
+
+# Environment files (will be mounted separately)
+.env
+.env.*
+!.env.example
+!.env.production.example
+
+# Storage (will be mounted as volumes)
+/storage/framework/cache/*
+/storage/framework/sessions/*
+/storage/framework/views/*
+/storage/logs/*
+
+# Testing
+/tests
+phpunit.xml
+.phpunit.cache
+
+# Documentation
+*.md
+!README.md
+
+# Development files
+.php-cs-fixer.dist.php
+.php-cs-fixer.cache
+phpstan.neon
+.editorconfig
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Scripts
+*.sh
+*.bat
