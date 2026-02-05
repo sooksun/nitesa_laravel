@@ -58,11 +58,9 @@ return [
             'prefix_indexes' => true,
             'strict' => true,
             'engine' => null,
-            // PDO::MYSQL_ATTR_SSL_CA = 1009, PDO::MYSQL_ATTR_CONNECT_TIMEOUT = 1002
-            'options' => extension_loaded('pdo_mysql') ? array_filter([
-                1009 => env('MYSQL_ATTR_SSL_CA'),
-                1002 => env('DB_CONNECT_TIMEOUT', 10),
-            ]) : [],
+            'options' => extension_loaded('pdo_mysql') && env('MYSQL_ATTR_SSL_CA') ? [
+                PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+            ] : [],
         ],
 
         'pgsql' => [
