@@ -142,15 +142,34 @@ resources/views/
 - Docker & Docker Compose
 - MySQL/MariaDB (Host หรือ Container)
 
-### Quick Install on Server
+### Step 1: ติดตั้ง Database (MySQL/MariaDB)
 
 ```bash
-# 1. Clone repository
+# เข้า MySQL ด้วย root
+mysql -u root -p
+
+# สร้าง Database
+CREATE DATABASE nitesa CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+# สร้าง User และกำหนดสิทธิ์
+CREATE USER 'nitesa_user'@'%' IDENTIFIED BY 'your_secure_password';
+GRANT ALL PRIVILEGES ON nitesa.* TO 'nitesa_user'@'%';
+FLUSH PRIVILEGES;
+
+# ตรวจสอบ
+SHOW DATABASES;
+EXIT;
+```
+
+### Step 2: Clone และตั้งค่า Application
+
+```bash
+# Clone repository
 cd /DATA/AppData/www
 git clone https://github.com/sooksun/nitesa_laravel.git nitesa
 cd nitesa
 
-# 2. สร้างไฟล์ .env
+# สร้างไฟล์ .env
 cat > .env << 'EOF'
 APP_NAME="ระบบนิเทศการศึกษา"
 APP_ENV=production
@@ -166,8 +185,8 @@ DB_CONNECTION=mysql
 DB_HOST=192.168.1.4
 DB_PORT=3306
 DB_DATABASE=nitesa
-DB_USERNAME=tok
-DB_PASSWORD=your_password
+DB_USERNAME=nitesa_user
+DB_PASSWORD=your_secure_password
 
 SESSION_DRIVER=redis
 SESSION_LIFETIME=120
@@ -178,40 +197,106 @@ REDIS_PORT=6379
 
 FILESYSTEM_DISK=public
 EOF
+```
 
-# 3. Generate APP_KEY
-php artisan key:generate
-# หรือ
-APP_KEY=$(openssl rand -base64 32)
-sed -i "s/APP_KEY=/APP_KEY=base64:$APP_KEY/" .env
+### Step 3: Build Docker Containers
 
-# 4. Build และ Start Docker containers
+```bash
+# Build และ Start containers
 docker compose up -d --build
 
-# 5. หลัง build เสร็จ - ติดตั้ง dependencies และ build assets ใน container
+# รอให้ build เสร็จ (ประมาณ 2-3 นาที)
+docker compose logs -f app
+```
+
+### Step 4: ติดตั้ง Dependencies และ Build Assets
+
+```bash
+# ติดตั้ง PHP dependencies
 docker compose exec app composer install --no-dev --optimize-autoloader
+
+# ติดตั้ง Node dependencies และ build frontend
 docker compose exec app npm ci
 docker compose exec app npm run build
+```
 
-# 6. แก้ไข permissions
+### Step 5: ตั้งค่า Permissions
+
+```bash
 docker compose exec app chown -R www-data:www-data /var/www/html/storage
 docker compose exec app chown -R www-data:www-data /var/www/html/bootstrap/cache
 docker compose exec app chmod -R 775 /var/www/html/storage
 docker compose exec app chmod -R 775 /var/www/html/bootstrap/cache
+```
 
-# 7. Run migrations
+### Step 6: Generate APP_KEY
+
+```bash
+docker compose exec app php artisan key:generate
+```
+
+### Step 7: Run Database Migrations
+
+```bash
+# ทดสอบ database connection
+docker compose exec app php artisan migrate:status
+
+# Run migrations
 docker compose exec app php artisan migrate --force
 
-# 8. Publish Livewire assets
+# (Optional) Seed ข้อมูลเริ่มต้น
+docker compose exec app php artisan db:seed --force
+```
+
+### Step 8: สร้าง Admin User
+
+```bash
+docker compose exec app php artisan tinker
+
+# ใน Tinker shell:
+use App\Models\User;
+use App\Enums\Role;
+use Illuminate\Support\Facades\Hash;
+
+User::create([
+    'name' => 'Admin',
+    'email' => 'admin@nitesa.local',
+    'password' => Hash::make('your_admin_password'),
+    'role' => Role::ADMIN,
+]);
+
+exit
+```
+
+### Step 9: Publish Assets และ Optimize
+
+```bash
+# Publish Livewire assets
 docker compose exec app php artisan livewire:publish --assets
 
-# 9. Optimize Laravel
+# Create storage link
+docker compose exec app php artisan storage:link
+
+# Optimize Laravel
 docker compose exec app php artisan optimize
 docker compose exec app php artisan view:cache
 
-# 10. Restart containers
+# Restart containers
 docker compose restart
 ```
+
+### Step 10: ทดสอบ Application
+
+```bash
+# ทดสอบ local
+curl -I http://localhost:9000
+
+# ดู logs หาก error
+docker compose logs app --tail 50
+docker compose exec app tail -50 storage/logs/laravel.log
+```
+
+เปิด Browser: https://nitesa.cnppai.com/
 
 ### อัพเดทโค้ดบน Server
 
