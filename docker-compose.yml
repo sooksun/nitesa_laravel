@@ -53,14 +53,14 @@ services:
     restart: unless-stopped
     environment:
       MYSQL_DATABASE: ${DB_DATABASE:-nitesa}
-      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-secret}
-      MYSQL_USER: ${DB_USERNAME:-nitesa}
-      MYSQL_PASSWORD: ${DB_PASSWORD:-secret}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-l6-lyo9N}
+      MYSQL_USER: ${DB_USERNAME:-tok}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-l6-lyo9N}
     volumes:
       - nitesa_db_data:/var/lib/mysql
       - ./docker/mysql/my.cnf:/etc/mysql/conf.d/my.cnf
     ports:
-      - "3307:3306"
+      - "3306:3306"
     networks:
       - nitesa_network
 
