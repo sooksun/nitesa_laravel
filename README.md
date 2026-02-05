@@ -142,6 +142,29 @@ resources/views/
 - Docker & Docker Compose
 - MySQL/MariaDB (Host หรือ Container)
 
+---
+
+### 🚀 Quick Install (One Command)
+
+หลังจากสร้าง Database แล้ว สามารถรันคำสั่งนี้ได้เลย:
+
+```bash
+cd /DATA/AppData/www
+git clone https://github.com/sooksun/nitesa_laravel.git nitesa
+cd nitesa
+
+# แก้ไขค่าใน install.sh ก่อนรัน (DB_HOST, DB_PASS, ADMIN_PASSWORD)
+nano install.sh
+
+# รัน script
+chmod +x install.sh
+./install.sh
+```
+
+---
+
+### 📋 Step-by-Step Installation
+
 ### Step 1: ติดตั้ง Database (MySQL/MariaDB)
 
 ```bash
