@@ -31,7 +31,7 @@ class SchoolController extends Controller
 
         // Filter by assigned schools for supervisors
         if ($request->user()->isSupervisor()) {
-            $assignedSchoolIds = $request->user()->assignedSchools()->pluck('schools.id');
+            $assignedSchoolIds = $request->user()->assignedSchools()->pluck('school.id');
             $query->whereIn('id', $assignedSchoolIds);
         }
 

@@ -145,7 +145,7 @@ class User extends Authenticatable
 
         if ($this->isSupervisor()) {
             return $this->assignedSchools()
-                ->where('schools.id', $school->id)
+                ->where('school.id', $school->id)
                 ->exists();
         }
 
@@ -166,7 +166,7 @@ class User extends Authenticatable
 
         if ($this->isSupervisor()) {
             return $supervision->userId === $this->id
-                || $this->assignedSchools()->where('schools.id', $supervision->schoolId)->exists();
+                || $this->assignedSchools()->where('school.id', $supervision->schoolId)->exists();
         }
 
         if ($this->isSchool()) {

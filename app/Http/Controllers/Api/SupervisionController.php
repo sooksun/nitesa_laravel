@@ -86,6 +86,11 @@ class SupervisionController extends Controller
             'indicators.*.comment' => 'nullable|string',
         ]);
 
+        $user = $request->user();
+        if ($user->isSupervisor() && ! $user->assignedSchools()->where('school.id', $validated['schoolId'])->exists()) {
+            return response()->json(['message' => 'คุณไม่มีสิทธิ์บันทึกการนิเทศของโรงเรียนนี้'], 403);
+        }
+
         $supervision = Supervision::create([
             ...$validated,
             'userId' => $request->user()->id,
@@ -113,8 +118,10 @@ class SupervisionController extends Controller
      * @param Supervision $supervision
      * @return JsonResponse<Supervision>
      */
-    public function show(Supervision $supervision): JsonResponse
+    public function show(Request $request, Supervision $supervision): JsonResponse
     {
+        abort_unless($request->user()->canAccessSupervision($supervision), 403, 'คุณไม่มีสิทธิ์เข้าถึงการนิเทศนี้');
+
         $supervision->load([
             'school.networkGroupRelation',
             'user',
@@ -138,6 +145,8 @@ class SupervisionController extends Controller
      */
     public function update(Request $request, Supervision $supervision): JsonResponse
     {
+        $this->authorizeOwner($request, $supervision);
+
         // Only allow updates on drafts or needs_improvement
         $allowedStatuses = [SupervisionStatus::DRAFT, SupervisionStatus::NEEDS_IMPROVEMENT];
         if (! in_array($supervision->status, $allowedStatuses, true)) {
@@ -194,8 +203,10 @@ class SupervisionController extends Controller
      * @param Supervision $supervision
      * @return JsonResponse<null>
      */
-    public function destroy(Supervision $supervision): JsonResponse
+    public function destroy(Request $request, Supervision $supervision): JsonResponse
     {
+        $this->authorizeOwner($request, $supervision);
+
         // Only allow deletion of drafts
         if ($supervision->status !== SupervisionStatus::DRAFT) {
             return response()->json(
@@ -219,6 +230,8 @@ class SupervisionController extends Controller
      */
     public function submit(Request $request, Supervision $supervision): JsonResponse
     {
+        $this->authorizeOwner($request, $supervision);
+
         if (! $supervision->canSubmit()) {
             return response()->json(
                 ['message' => 'ไม่สามารถส่งการนิเทศนี้ได้'],
@@ -389,6 +402,13 @@ class SupervisionController extends Controller
         $supervision->load('acknowledgement');
 
         return response()->json($supervision);
+    }
+
+    protected function authorizeOwner(Request $request, Supervision $supervision): void
+    {
+        $user = $request->user();
+
+        abort_unless($user->isAdmin() || $supervision->userId === $user->id, 403, 'คุณไม่มีสิทธิ์แก้ไขการนิเทศนี้');
     }
 
     /**

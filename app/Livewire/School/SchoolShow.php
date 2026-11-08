@@ -14,7 +14,10 @@ class SchoolShow extends Component
         $this->school = $school->load([
             'networkGroupRelation',
             'supervisors',
-            'supervisions' => fn($q) => $q->with('user')->latest('date')->limit(10),
+            'supervisions' => fn($q) => $q->with('user')
+                ->when(auth()->user()?->isSchool(), fn($q) => $q->where('status', \App\Enums\SupervisionStatus::PUBLISHED))
+                ->latest('date')
+                ->limit(10),
         ]);
     }
 

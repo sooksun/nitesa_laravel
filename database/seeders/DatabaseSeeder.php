@@ -14,9 +14,26 @@ use App\Models\Supervision;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class DatabaseSeeder extends Seeder
 {
+    private ?string $seedPassword = null;
+
+    // Never put the well-known "password" on accounts of an internet-facing production install.
+    private function seedPassword(): string
+    {
+        if ($this->seedPassword === null) {
+            $this->seedPassword = app()->environment('production') ? Str::password(16, symbols: false) : 'password';
+
+            if (app()->environment('production')) {
+                $this->command->warn("รหัสผ่านของบัญชีที่ seed ทั้งหมด: {$this->seedPassword}  (แสดงครั้งเดียว ให้เปลี่ยนหลัง login)");
+            }
+        }
+
+        return $this->seedPassword;
+    }
+
     public function run(): void
     {
         // ตรวจสอบว่ามีข้อมูลหรือไม่
@@ -37,7 +54,7 @@ class DatabaseSeeder extends Seeder
         $admin = User::create([
             'name' => 'ผู้ดูแลระบบ',
             'email' => 'admin@nitesa.local',
-            'password' => Hash::make('password'),
+            'password' => Hash::make($this->seedPassword()),
             'role' => Role::ADMIN,
         ]);
 
@@ -47,7 +64,7 @@ class DatabaseSeeder extends Seeder
             $supervisors[] = User::create([
                 'name' => "ศึกษานิเทศก์ {$i}",
                 'email' => "supervisor{$i}@nitesa.local",
-                'password' => Hash::make('password'),
+                'password' => Hash::make($this->seedPassword()),
                 'role' => Role::SUPERVISOR,
             ]);
         }
@@ -56,7 +73,7 @@ class DatabaseSeeder extends Seeder
         User::create([
             'name' => 'ผู้บริหารระดับสูง',
             'email' => 'executive@nitesa.local',
-            'password' => Hash::make('password'),
+            'password' => Hash::make($this->seedPassword()),
             'role' => Role::EXECUTIVE,
         ]);
 
@@ -66,7 +83,7 @@ class DatabaseSeeder extends Seeder
             $schoolUsers[] = User::create([
                 'name' => "โรงเรียนทดสอบ {$i}",
                 'email' => "school{$i}@nitesa.local",
-                'password' => Hash::make('password'),
+                'password' => Hash::make($this->seedPassword()),
                 'role' => Role::SCHOOL,
             ]);
         }
@@ -219,7 +236,7 @@ class DatabaseSeeder extends Seeder
                     User::create([
                         'name' => "ศึกษานิเทศก์ {$i}",
                         'email' => "supervisor{$i}@nitesa.local",
-                        'password' => Hash::make('password'),
+                        'password' => Hash::make($this->seedPassword()),
                         'role' => Role::SUPERVISOR,
                     ]);
                 }
