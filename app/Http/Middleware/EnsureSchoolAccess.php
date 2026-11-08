@@ -44,7 +44,7 @@ class EnsureSchoolAccess
 
         // Supervisor can only access assigned schools
         if ($user->role === Role::SUPERVISOR) {
-            if (! $user->assignedSchools()->where('schools.id', $school->id)->exists()) {
+            if (! $user->assignedSchools()->where('school.id', $school->id)->exists()) {
                 if ($request->expectsJson()) {
                     return response()->json(['message' => 'คุณไม่มีสิทธิ์เข้าถึงโรงเรียนนี้'], 403);
                 }
