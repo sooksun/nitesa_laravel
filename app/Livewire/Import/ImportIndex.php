@@ -100,8 +100,8 @@ class ImportIndex extends Component
                 'phone' => $data['phone'] ?? null,
                 'email' => $data['email'] ?? null,
                 'principalName' => $data['principalName'] ?? $data['principal_name'] ?? null,
-                'studentCount' => isset($data['studentCount']) ? (int) $data['studentCount'] : (isset($data['student_count']) ? (int) $data['student_count'] : null),
-                'teacherCount' => isset($data['teacherCount']) ? (int) $data['teacherCount'] : (isset($data['teacher_count']) ? (int) $data['teacher_count'] : null),
+                'studentCount' => (int) ($data['studentCount'] ?? $data['student_count'] ?? 0),
+                'teacherCount' => (int) ($data['teacherCount'] ?? $data['teacher_count'] ?? 0),
             ]
         );
     }
