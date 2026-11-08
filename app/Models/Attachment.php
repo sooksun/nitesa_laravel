@@ -100,11 +100,23 @@ class Attachment extends Model
     }
 
     /**
-     * Get the storage disk to use for this attachment
+     * Uploads are written to the private 'local' disk; older rows may live on the default disk.
      */
-    protected function getStorageDisk(): string
+    public function getStorageDisk(): string
     {
+        if (! empty($this->fileUrl) && Storage::disk('local')->exists($this->fileUrl)) {
+            return 'local';
+        }
+
         return config('filesystems.default', 'local');
+    }
+
+    public static function sanitizeFilename(string $name): string
+    {
+        $name = basename(str_replace('\\', '/', $name));
+        $name = preg_replace('/[\x00-\x1F\x7F"\\\\\/]/u', '', $name) ?? '';
+
+        return $name !== '' ? mb_substr($name, 0, 200) : 'file';
     }
 
     /**
@@ -141,29 +153,9 @@ class Attachment extends Model
             return null;
         }
 
+        // Always go through the authorized controller instead of a direct /storage URL.
         try {
-            $disk = $this->getStorageDisk();
-
-            // For 'public' disk, use Storage::url()
-            if ($disk === 'public') {
-                return Storage::disk($disk)->url($this->fileUrl);
-            }
-
-            // For 'local' disk, need to use storage:link
-            if ($disk === 'local') {
-                // Check if symbolic link exists
-                $publicPath = public_path('storage');
-                if (is_link($publicPath) || file_exists($publicPath)) {
-                    return Storage::disk('public')->url($this->fileUrl);
-                }
-                // Fallback: use asset() if file is in public storage
-                if (str_starts_with($this->fileUrl, 'public/')) {
-                    return asset('storage/' . str_replace('public/', '', $this->fileUrl));
-                }
-            }
-
-            // For S3 or other cloud storage
-            return Storage::disk($disk)->url($this->fileUrl);
+            return route('attachments.view', $this->id);
         } catch (\Exception $e) {
             Log::error("Failed to get URL for attachment", [
                 'attachment_id' => $this->id,
@@ -201,8 +193,6 @@ class Attachment extends Model
         }
 
         try {
-            $disk = $this->getStorageDisk();
-
             return route('attachments.download', $this->id);
         } catch (\Exception $e) {
             Log::error("Failed to get download URL for attachment", [

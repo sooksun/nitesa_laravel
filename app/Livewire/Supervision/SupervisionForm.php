@@ -4,6 +4,7 @@ namespace App\Livewire\Supervision;
 
 use App\Enums\IndicatorLevel;
 use App\Enums\SupervisionStatus;
+use App\Models\Attachment;
 use App\Models\Indicator;
 use App\Models\Policy;
 use App\Models\School;
@@ -72,6 +73,8 @@ class SupervisionForm extends Component
             'indicators.*.name' => ['required', 'string'],
             'indicators.*.level' => ['required', 'in:EXCELLENT,GOOD,FAIR,NEEDS_WORK'],
             'indicators.*.comment' => ['nullable', 'string'],
+            'uploads' => ['array', 'max:20'],
+            'uploads.*' => ['file', 'max:10240', 'mimes:jpg,jpeg,png,gif,webp,pdf,doc,docx,xls,xlsx'],
         ];
     }
 
@@ -83,6 +86,8 @@ class SupervisionForm extends Component
         'suggestions.required' => 'กรุณาระบุข้อเสนอแนะ',
         'indicators.required' => 'กรุณาเพิ่มตัวชี้วัดอย่างน้อย 1 รายการ',
         'indicators.min' => 'กรุณาเพิ่มตัวชี้วัดอย่างน้อย 1 รายการ',
+        'uploads.*.mimes' => 'อนุญาตเฉพาะไฟล์รูปภาพ, PDF, Word และ Excel เท่านั้น',
+        'uploads.*.max' => 'ไฟล์แนบต้องมีขนาดไม่เกิน 10 MB',
     ];
 
     public function mount(?Supervision $supervision = null)
@@ -249,7 +254,7 @@ class SupervisionForm extends Component
             try {
                 $path = $file->store('attachments', 'local');
                 $supervision->attachments()->create([
-                    'filename' => $file->getClientOriginalName(),
+                    'filename' => Attachment::sanitizeFilename($file->getClientOriginalName()),
                     'fileUrl' => $path,
                     'fileType' => $file->getMimeType(),
                     'fileSize' => $file->getSize(),

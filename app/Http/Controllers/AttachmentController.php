@@ -4,9 +4,18 @@ namespace App\Http\Controllers;
 
 use App\Models\Attachment;
 use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\HeaderUtils;
 
 class AttachmentController extends Controller
 {
+    private const INLINE_MIME_TYPES = [
+        'image/jpeg',
+        'image/png',
+        'image/gif',
+        'image/webp',
+        'application/pdf',
+    ];
+
     /**
      * Ensure the authenticated user can access this attachment's supervision.
      */
@@ -19,77 +28,47 @@ class AttachmentController extends Controller
         }
     }
 
-    /**
-     * Download an attachment file
-     */
     public function download(Attachment $attachment)
     {
-        $this->authorizeAttachment($attachment);
-
-        // Check if file exists
-        if (! $attachment->fileExists()) {
-            abort(404, 'ไฟล์ไม่พบในระบบ');
-        }
-
-        try {
-            $disk = config('filesystems.default', 'local');
-            $filePath = $attachment->fileUrl;
-
-            // Check if file exists in storage
-            if (! Storage::disk($disk)->exists($filePath)) {
-                abort(404, 'ไฟล์ไม่พบในระบบ');
-            }
-
-            // Get file content
-            $fileContent = Storage::disk($disk)->get($filePath);
-            $mimeType = Storage::disk($disk)->mimeType($filePath) ?? $attachment->fileType ?? 'application/octet-stream';
-
-            // Return file as download
-            return response()->streamDownload(function () use ($fileContent) {
-                echo $fileContent;
-            }, $attachment->filename, [
-                'Content-Type' => $mimeType,
-                'Content-Disposition' => 'attachment; filename="' . $attachment->filename . '"',
-            ]);
-        } catch (\Exception $e) {
-            \Log::error("Failed to download attachment {$attachment->id}: " . $e->getMessage());
-            abort(500, 'เกิดข้อผิดพลาดในการดาวน์โหลดไฟล์');
-        }
+        return $this->respond($attachment, false);
     }
 
-    /**
-     * View an attachment file (inline)
-     */
     public function view(Attachment $attachment)
+    {
+        return $this->respond($attachment, true);
+    }
+
+    protected function respond(Attachment $attachment, bool $inline)
     {
         $this->authorizeAttachment($attachment);
 
-        // Check if file exists
-        if (! $attachment->fileExists()) {
+        $disk = $attachment->getStorageDisk();
+        $filePath = $attachment->fileUrl;
+
+        if (empty($filePath) || ! Storage::disk($disk)->exists($filePath)) {
             abort(404, 'ไฟล์ไม่พบในระบบ');
         }
 
         try {
-            $disk = config('filesystems.default', 'local');
-            $filePath = $attachment->fileUrl;
+            $mimeType = Storage::disk($disk)->mimeType($filePath) ?: 'application/octet-stream';
+            // Anything that is not a plain image/PDF (e.g. HTML, SVG, scripts) is never rendered by the browser.
+            $inline = $inline && in_array($mimeType, self::INLINE_MIME_TYPES, true);
 
-            // Check if file exists in storage
-            if (! Storage::disk($disk)->exists($filePath)) {
-                abort(404, 'ไฟล์ไม่พบในระบบ');
-            }
+            $filename = Attachment::sanitizeFilename($attachment->filename);
+            $disposition = HeaderUtils::makeDisposition(
+                $inline ? HeaderUtils::DISPOSITION_INLINE : HeaderUtils::DISPOSITION_ATTACHMENT,
+                $filename,
+                preg_replace('/[^\x20-\x7E]/', '_', $filename),
+            );
 
-            // Get file content
-            $fileContent = Storage::disk($disk)->get($filePath);
-            $mimeType = Storage::disk($disk)->mimeType($filePath) ?? $attachment->fileType ?? 'application/octet-stream';
-
-            // Return file as inline view
-            return response($fileContent, 200, [
-                'Content-Type' => $mimeType,
-                'Content-Disposition' => 'inline; filename="' . $attachment->filename . '"',
+            return response(Storage::disk($disk)->get($filePath), 200, [
+                'Content-Type' => $inline ? $mimeType : 'application/octet-stream',
+                'Content-Disposition' => $disposition,
+                'X-Content-Type-Options' => 'nosniff',
             ]);
         } catch (\Exception $e) {
-            \Log::error("Failed to view attachment {$attachment->id}: " . $e->getMessage());
-            abort(500, 'เกิดข้อผิดพลาดในการแสดงไฟล์');
+            \Log::error("Failed to serve attachment {$attachment->id}: " . $e->getMessage());
+            abort(500, 'เกิดข้อผิดพลาดในการเปิดไฟล์');
         }
     }
 }
