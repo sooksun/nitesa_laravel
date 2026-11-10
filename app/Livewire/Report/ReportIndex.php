@@ -73,8 +73,13 @@ class ReportIndex extends Component
 
     public function getDistrictsProperty()
     {
-        return $this->applySchoolFilters(School::query()->select('district'))
-            ->distinct()->orderBy('district')->pluck('district')->filter();
+        // Options depend only on the user's permitted schools, not on the current
+        // district/network-group selection, so switching districts stays possible.
+        $scoped = $this->scopedSchoolIds();
+
+        return School::query()
+            ->when($scoped !== null, fn ($q) => $q->whereIn('id', $scoped))
+            ->distinct()->orderBy('district')->pluck('district')->filter()->values();
     }
 
     public function getNetworkGroupsProperty()

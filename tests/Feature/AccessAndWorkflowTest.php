@@ -338,6 +338,19 @@ class AccessAndWorkflowTest extends TestCase
         $this->assertSame('แก้ไขสรุป', app(SupervisionService::class)->latestRejectionReason($s->fresh()));
     }
 
+    public function test_report_district_options_ignore_current_district_selection(): void
+    {
+        $a = $this->makeSchool();
+        $b = School::create(['code' => 'T' . Str::upper(Str::random(8)), 'name' => 'โรงเรียน B', 'district' => 'อำเภออื่นทดสอบ']);
+        $sup = $this->makeUser('SUPERVISOR', [$a, $b]);
+
+        $districts = Livewire::actingAs($sup)->test(ReportIndex::class)
+            ->set('district', $a->district)
+            ->instance()->districts->all();
+
+        $this->assertSame([$a->district, $b->district], $districts);
+    }
+
     public function test_activity_log_is_admin_only(): void
     {
         $this->actingAs($this->makeUser('ADMIN'))->get(route('activity-log.index'))->assertOk();
