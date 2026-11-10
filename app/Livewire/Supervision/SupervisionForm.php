@@ -11,7 +11,6 @@ use App\Models\School;
 use App\Models\Supervision;
 use App\Services\SupervisionService;
 use Illuminate\Contracts\View\View;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Livewire\Component;
@@ -173,16 +172,31 @@ class SupervisionForm extends Component
      * Save supervision (create or update)
      *
      * @param string $status Status to save (default: DRAFT)
-     * @return RedirectResponse
+     * @return mixed
      */
-    public function save(string $status = 'DRAFT'): RedirectResponse
+    public function save(string $status = 'DRAFT')
     {
+        $submit = $status === 'SUBMITTED';
+
         $this->validate();
+
+        $user = auth()->user();
+        $scopedIds = $user->scopedSchoolIds();
+        if ($scopedIds !== null && ! in_array($this->schoolId, $scopedIds, true)) {
+            abort(403, 'คุณไม่มีสิทธิ์บันทึกการนิเทศของโรงเรียนนี้');
+        }
+
+        if ($this->editing && $this->supervision !== null) {
+            $this->supervision->refresh();
+            $canEdit = $user->isAdmin() || $this->supervision->userId === $user->id;
+            if (! $canEdit || ! $this->supervision->canSubmit()) {
+                abort(403, 'คุณไม่มีสิทธิ์แก้ไขการนิเทศนี้');
+            }
+        }
 
         try {
             $data = [
                 'schoolId' => $this->schoolId,
-                'userId' => auth()->id(),
                 'type' => $this->type,
                 'date' => $this->date,
                 'academicYear' => $this->academicYear ?: null,
@@ -191,7 +205,6 @@ class SupervisionForm extends Component
                 'areaPolicyId' => $this->areaPolicyId ?: null,
                 'summary' => $this->summary,
                 'suggestions' => $this->suggestions,
-                'status' => SupervisionStatus::from($status),
             ];
 
             $service = app(SupervisionService::class);
@@ -204,12 +217,30 @@ class SupervisionForm extends Component
                 );
                 $message = 'อัปเดตการนิเทศเรียบร้อยแล้ว';
             } else {
+                $data['userId'] = $user->id;
+                $data['status'] = SupervisionStatus::DRAFT;
                 $supervision = $service->createSupervision($data, $this->indicators);
                 $message = 'บันทึกการนิเทศเรียบร้อยแล้ว';
             }
 
             // Handle file uploads
             $this->handleFileUploads($supervision);
+
+            if ($submit && $service->submit($supervision)) {
+                activity()
+                    ->causedBy($user)
+                    ->performedOn($supervision)
+                    ->log('ส่งการนิเทศเพื่ออนุมัติ');
+
+                $recipients = \App\Models\User::whereIn('role', ['EXECUTIVE', 'ADMIN'])
+                    ->where('isActive', true)
+                    ->get();
+                foreach ($recipients as $recipient) {
+                    $recipient->notify(new \App\Notifications\SupervisionSubmittedNotification($supervision));
+                }
+
+                $message = 'บันทึกและส่งการนิเทศเพื่ออนุมัติเรียบร้อยแล้ว';
+            }
 
             // Clear dashboard cache
             \App\Livewire\Dashboard\DashboardSummary::clearCache($supervision->academicYear);
@@ -228,16 +259,16 @@ class SupervisionForm extends Component
                 'text' => 'ไม่สามารถบันทึกการนิเทศได้: ' . $e->getMessage(),
             ]);
 
-            return redirect()->back();
+            return null;
         }
     }
 
     /**
      * Save and submit supervision for approval
      *
-     * @return RedirectResponse
+     * @return mixed
      */
-    public function saveAndSubmit(): RedirectResponse
+    public function saveAndSubmit()
     {
         return $this->save('SUBMITTED');
     }

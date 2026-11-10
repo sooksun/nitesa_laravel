@@ -33,7 +33,7 @@ class Indicator extends Model
         parent::boot();
         static::creating(function ($model) {
             if (empty($model->{$model->getKeyName()})) {
-                $model->{$model->getKeyName()} = Str::ulid();
+                $model->{$model->getKeyName()} = (string) Str::ulid();
             }
         });
     }

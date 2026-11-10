@@ -63,6 +63,21 @@
                         <p class="mt-1 text-xs text-gray-500">เลือกโรงเรียนที่ศึกษานิเทศก์จะรับผิดชอบดูแล</p>
                     </div>
                     @endif
+
+                    @if($role === 'SCHOOL')
+                    <div>
+                        <label for="schoolId" class="block text-sm font-medium leading-6 text-gray-900 mb-2">โรงเรียนของผู้ใช้งาน <span class="text-red-500">*</span></label>
+                        <select wire:model="schoolId" id="schoolId"
+                                class="block w-full rounded-lg border-0 py-2.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-pink-600 sm:text-sm sm:leading-6">
+                            <option value="">-- เลือกโรงเรียน --</option>
+                            @foreach($this->schools as $school)
+                                <option value="{{ $school->id }}">{{ $school->name }} ({{ $school->code }})</option>
+                            @endforeach
+                        </select>
+                        @error('schoolId') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+                        <p class="mt-1 text-xs text-gray-500">ผู้ใช้ระดับโรงเรียนจะเห็นเฉพาะข้อมูลการนิเทศของโรงเรียนนี้</p>
+                    </div>
+                    @endif
                 </div>
             </div>
 
