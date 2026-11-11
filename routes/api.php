@@ -59,7 +59,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/supervisions/{supervision}/approve', [SupervisionController::class, 'approve']);
         Route::post('/supervisions/{supervision}/reject', [SupervisionController::class, 'reject']);
     });
-    Route::post('/supervisions/{supervision}/publish', [SupervisionController::class, 'publish'])->middleware('role:ADMIN');
+    Route::post('/supervisions/{supervision}/publish', [SupervisionController::class, 'publish'])->middleware('role:ADMIN,SUPERVISOR');
     Route::post('/supervisions/{supervision}/acknowledge', [SupervisionController::class, 'acknowledge'])->middleware('role:SCHOOL');
 
     // Analytics
@@ -74,7 +74,7 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     // Activity Log (Admin and Executive only)
-    Route::prefix('activity-log')->middleware('role:ADMIN,EXECUTIVE')->group(function () {
+    Route::prefix('activity-log')->middleware('role:ADMIN')->group(function () {
         Route::get('/', [ActivityLogController::class, 'index']);
         Route::get('/stats', [ActivityLogController::class, 'stats']);
         Route::get('/recent', [ActivityLogController::class, 'recent']);

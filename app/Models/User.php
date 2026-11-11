@@ -71,7 +71,7 @@ class User extends Authenticatable
         parent::boot();
         static::creating(function ($model) {
             if (empty($model->{$model->getKeyName()})) {
-                $model->{$model->getKeyName()} = Str::ulid();
+                $model->{$model->getKeyName()} = (string) Str::ulid();
             }
         });
     }
@@ -83,12 +83,34 @@ class User extends Authenticatable
 
     public function supervisions(): HasMany
     {
-        return $this->hasMany(Supervision::class);
+        return $this->hasMany(Supervision::class, 'userId');
     }
 
     public function improvements(): HasMany
     {
-        return $this->hasMany(Improvement::class);
+        return $this->hasMany(Improvement::class, 'userId');
+    }
+
+    /**
+     * School IDs this user is limited to, or null when the user may see every school.
+     * SUPERVISOR = assigned schools; SCHOOL = the school it is bound to (same pivot).
+     *
+     * @return array<int, string>|null
+     */
+    public function scopedSchoolIds(): ?array
+    {
+        if ($this->isAdmin() || $this->isExecutive()) {
+            return null;
+        }
+
+        return $this->assignedSchools()->pluck('school.id')->all();
+    }
+
+    public function canViewSchool(School $school): bool
+    {
+        $ids = $this->scopedSchoolIds();
+
+        return $ids === null || in_array($school->id, $ids, true);
     }
 
     /**
@@ -170,7 +192,8 @@ class User extends Authenticatable
         }
 
         if ($this->isSchool()) {
-            return $supervision->status === \App\Enums\SupervisionStatus::PUBLISHED;
+            return $supervision->status === \App\Enums\SupervisionStatus::PUBLISHED
+                && $this->assignedSchools()->where('school.id', $supervision->schoolId)->exists();
         }
 
         return false;

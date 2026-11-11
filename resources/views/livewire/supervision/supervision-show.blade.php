@@ -115,6 +115,17 @@
                 <p class="text-sm text-red-700">
                     <strong>หมายเหตุ:</strong> การนิเทศนี้ถูกส่งกลับเพื่อปรับปรุง กรุณาแก้ไขและส่งใหม่อีกครั้ง
                 </p>
+                @if($this->rejectionReason)
+                    <p class="mt-1 text-sm text-red-700"><strong>เหตุผล:</strong> {{ $this->rejectionReason }}</p>
+                @endif
+            </div>
+        @endif
+        @if($this->canReject())
+            <div class="mt-4">
+                <label for="rejectReason" class="block text-sm font-medium text-gray-900">เหตุผลการส่งกลับ (กรอกก่อนกด "ส่งกลับ")</label>
+                <textarea wire:model="rejectReason" id="rejectReason" rows="2" maxlength="500"
+                          class="mt-1 block w-full rounded-lg border-0 py-2 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-pink-600 sm:text-sm"></textarea>
+                @error('rejectReason') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
             </div>
         @endif
     </div>

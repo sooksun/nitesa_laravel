@@ -4,12 +4,15 @@ namespace App\Livewire\Supervision;
 
 use App\Enums\SupervisionStatus;
 use App\Models\Supervision;
+use App\Services\SupervisionService;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
 class SupervisionShow extends Component
 {
     public Supervision $supervision;
+
+    public string $rejectReason = '';
 
     public function mount(Supervision $supervision)
     {
@@ -83,13 +86,26 @@ class SupervisionShow extends Component
     #[On('doSubmit')]
     public function submit()
     {
+        $service = app(SupervisionService::class);
+
         if (! $this->canSubmit()) {
             $this->dispatch('swal:error', ['title' => 'ไม่สามารถส่งการนิเทศนี้ได้']);
 
             return;
         }
 
-        $this->supervision->submit();
+        $errors = $service->validateForSubmission($this->supervision);
+        if ($errors !== []) {
+            $this->dispatch('swal:error', ['title' => 'ข้อมูลไม่ครบ', 'text' => implode(' / ', $errors)]);
+
+            return;
+        }
+
+        if (! $service->submit($this->supervision)) {
+            $this->dispatch('swal:error', ['title' => 'ไม่สามารถส่งการนิเทศนี้ได้']);
+
+            return;
+        }
         $this->supervision->refresh();
 
         activity()
@@ -97,10 +113,8 @@ class SupervisionShow extends Component
             ->performedOn($this->supervision)
             ->log('ส่งการนิเทศเพื่ออนุมัติ');
 
-        // Clear dashboard cache
         \App\Livewire\Dashboard\DashboardSummary::clearCache($this->supervision->academicYear);
 
-        // ส่ง notification ไปยังผู้บริหาร (EXECUTIVE) และ ADMIN
         $this->notifyExecutivesAndAdmins();
 
         $this->dispatch('swal:success', ['title' => 'ส่งการนิเทศเรียบร้อยแล้ว']);
@@ -109,13 +123,13 @@ class SupervisionShow extends Component
     #[On('doApprove')]
     public function approve()
     {
-        if (! $this->canApprove()) {
+        $service = app(SupervisionService::class);
+
+        if (! $this->canApprove() || ! $service->approve($this->supervision)) {
             $this->dispatch('swal:error', ['title' => 'ไม่สามารถอนุมัติการนิเทศนี้ได้']);
 
             return;
         }
-
-        $this->supervision->approve();
         $this->supervision->refresh();
 
         activity()
@@ -123,10 +137,8 @@ class SupervisionShow extends Component
             ->performedOn($this->supervision)
             ->log('อนุมัติการนิเทศ');
 
-        // Clear dashboard cache
         \App\Livewire\Dashboard\DashboardSummary::clearCache($this->supervision->academicYear);
 
-        // ส่ง notification ไปยังผู้นิเทศที่สร้างการนิเทศนี้
         $this->supervision->user->notify(
             new \App\Notifications\SupervisionApprovedNotification(
                 $this->supervision,
@@ -140,44 +152,50 @@ class SupervisionShow extends Component
     #[On('doReject')]
     public function reject()
     {
+        $service = app(SupervisionService::class);
+
         if (! $this->canReject()) {
-            $this->dispatch('swal:error', ['title' => 'ไม่สามารถปฏิเสธการนิเทศนี้ได้']);
+            $this->dispatch('swal:error', ['title' => 'ไม่สามารถส่งกลับการนิเทศนี้ได้']);
 
             return;
         }
 
-        $this->supervision->reject();
+        $this->validate(
+            ['rejectReason' => ['required', 'string', 'max:500']],
+            ['rejectReason.required' => 'กรุณาระบุเหตุผลการส่งกลับ']
+        );
+
+        if (! $service->reject($this->supervision, $this->rejectReason, auth()->user())) {
+            $this->dispatch('swal:error', ['title' => 'ไม่สามารถส่งกลับการนิเทศนี้ได้']);
+
+            return;
+        }
         $this->supervision->refresh();
 
-        activity()
-            ->causedBy(auth()->user())
-            ->performedOn($this->supervision)
-            ->log('ส่งกลับเพื่อปรับปรุง');
-
-        // Clear dashboard cache
         \App\Livewire\Dashboard\DashboardSummary::clearCache($this->supervision->academicYear);
 
-        // ส่ง notification ไปยังผู้นิเทศที่สร้างการนิเทศนี้
         $this->supervision->user->notify(
             new \App\Notifications\SupervisionRejectedNotification(
                 $this->supervision,
-                auth()->user()->name
+                auth()->user()->name,
+                $this->rejectReason
             )
         );
 
+        $this->rejectReason = '';
         $this->dispatch('swal:success', ['title' => 'ส่งกลับเพื่อปรับปรุงเรียบร้อยแล้ว']);
     }
 
     #[On('doPublish')]
     public function publish()
     {
-        if (! $this->canPublish()) {
+        $service = app(SupervisionService::class);
+
+        if (! $this->canPublish() || ! $service->publish($this->supervision)) {
             $this->dispatch('swal:error', ['title' => 'ไม่สามารถเผยแพร่การนิเทศนี้ได้']);
 
             return;
         }
-
-        $this->supervision->publish();
         $this->supervision->refresh();
 
         activity()
@@ -185,13 +203,20 @@ class SupervisionShow extends Component
             ->performedOn($this->supervision)
             ->log('เผยแพร่การนิเทศ');
 
-        // Clear dashboard cache
         \App\Livewire\Dashboard\DashboardSummary::clearCache($this->supervision->academicYear);
 
-        // ส่ง notification ไปยังโรงเรียนที่ถูกนิเทศ
-        $this->notifySchool();
+        $this->notifySchool($service);
 
         $this->dispatch('swal:success', ['title' => 'เผยแพร่การนิเทศเรียบร้อยแล้ว']);
+    }
+
+    public function getRejectionReasonProperty(): ?string
+    {
+        if ($this->supervision->status !== SupervisionStatus::NEEDS_IMPROVEMENT) {
+            return null;
+        }
+
+        return app(SupervisionService::class)->latestRejectionReason($this->supervision);
     }
 
     public function canSubmit(): bool
@@ -222,7 +247,8 @@ class SupervisionShow extends Component
     {
         $user = auth()->user();
 
-        return $this->supervision->canPublish() && $user->isAdmin();
+        return $this->supervision->canPublish()
+               && ($user->isAdmin() || ($user->isSupervisor() && $this->supervision->userId === $user->id));
     }
 
     public function canEdit(): bool
@@ -253,23 +279,14 @@ class SupervisionShow extends Component
     /**
      * ส่ง notification ไปยังโรงเรียน
      */
-    protected function notifySchool(): void
+    protected function notifySchool(SupervisionService $service): void
     {
-        // หา users ที่เป็น SCHOOL role และมีสิทธิ์เข้าถึงโรงเรียนนี้
-        $schoolUsers = \App\Models\User::where('role', 'SCHOOL')
-            ->where('isActive', true)
-            ->get();
-
-        // หรือถ้ามี relationship กับ school โดยตรง สามารถใช้:
-        // $schoolUsers = $this->supervision->school->users()->where('role', 'SCHOOL')->get();
-
-        foreach ($schoolUsers as $user) {
+        foreach ($service->schoolRecipients($this->supervision) as $user) {
             $user->notify(
                 new \App\Notifications\SupervisionPublishedNotification($this->supervision)
             );
         }
 
-        // ส่ง notification ให้กับผู้นิเทศด้วย
         $this->supervision->user->notify(
             new \App\Notifications\SupervisionPublishedNotification($this->supervision)
         );

@@ -24,6 +24,10 @@ class AcknowledgeForm extends Component
 
     public function mount(Supervision $supervision)
     {
+        if (! auth()->user()->canAccessSupervision($supervision)) {
+            abort(403, 'คุณไม่มีสิทธิ์เข้าถึงการนิเทศนี้');
+        }
+
         if ($supervision->status !== SupervisionStatus::PUBLISHED) {
             abort(403, 'การนิเทศยังไม่ถูกเผยแพร่');
         }
@@ -39,6 +43,10 @@ class AcknowledgeForm extends Component
     public function submit()
     {
         $this->validate();
+
+        if (! auth()->user()->canAccessSupervision($this->supervision) || $this->supervision->acknowledgement()->exists()) {
+            abort(403, 'ไม่สามารถรับทราบการนิเทศนี้ได้');
+        }
 
         Acknowledgement::create([
             'supervisionId' => $this->supervision->id,

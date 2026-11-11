@@ -80,7 +80,7 @@ When adding new columns or relationships, mirror these conventions; when queryin
 Two parallel surfaces share the same models and `SupervisionService`:
 
 - **Web (Livewire)** — `routes/web.php` maps directly to full-page Livewire components under `app/Livewire/{Dashboard,School,User,Policy,Supervision,Report,Import,Settings,Profile,ActivityLog}`. There are essentially no traditional web controllers besides Auth, Attachment, and Import. Components use the `App\Livewire\Traits\WithSweetAlert` trait to dispatch `swal:*` browser events for toasts/confirms (handled by JS that listens for those event names).
-- **API** — `routes/api.php` is Sanctum-protected (`auth:sanctum`) and exposes `apiResource` controllers in `app/Http/Controllers/Api/` plus workflow actions (`/supervisions/{id}/submit|approve|reject|publish|acknowledge`) and an `analytics/*` group. Activity log endpoints are gated by `role:ADMIN,EXECUTIVE`.
+- **API** — `routes/api.php` is Sanctum-protected (`auth:sanctum`) and exposes `apiResource` controllers in `app/Http/Controllers/Api/` plus workflow actions (`/supervisions/{id}/submit|approve|reject|publish|acknowledge`) and an `analytics/*` group. Activity log (web + API) is ADMIN-only per TOR section 12.
 
 ### Other notable pieces
 - `spatie/laravel-activitylog` records audit events (see `ACTIVITY_LOG_GUIDE.md` and `ActivityLogController`).

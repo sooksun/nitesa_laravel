@@ -19,3 +19,10 @@ yarn-error.log
 /.fleet
 /.idea
 /.vscode
+
+# Local data / reference files (not source)
+/database/*.sql
+/*.xlsx
+/doc/
+/install_on_sefrver.txt
+/database/policy-import-template.xlsx

@@ -5,6 +5,8 @@ use App\Http\Controllers\ImportController;
 use App\Livewire\ActivityLog\ActivityLogIndex;
 use App\Livewire\Dashboard\DashboardSummary;
 use App\Livewire\Import\ImportIndex;
+use App\Livewire\Manual\ManualIndex;
+use App\Livewire\NetworkGroup\NetworkGroupIndex;
 use App\Livewire\Policy\PolicyForm;
 use App\Livewire\Policy\PolicyList;
 use App\Livewire\Profile\ProfileEdit;
@@ -67,11 +69,15 @@ Route::middleware('auth')->group(function () {
     });
 
     // Policies (Admin only)
-    Route::prefix('policies')->name('policies.')->middleware('role:ADMIN')->group(function () {
+    Route::prefix('policies')->name('policies.')->group(function () {
         Route::get('/', PolicyList::class)->name('index');
-        Route::get('/create', PolicyForm::class)->name('create');
-        Route::get('/{policy}/edit', PolicyForm::class)->name('edit');
+        Route::get('/create', PolicyForm::class)->name('create')->middleware('role:ADMIN');
+        Route::get('/{policy}/edit', PolicyForm::class)->name('edit')->middleware('role:ADMIN');
     });
+
+    Route::get('/network-groups', NetworkGroupIndex::class)->name('network-groups.index')->middleware('role:ADMIN');
+
+    Route::get('/manual', ManualIndex::class)->name('manual');
 
     // Import (Admin only)
     Route::get('/import', ImportIndex::class)->name('import.index')->middleware('role:ADMIN');
@@ -90,7 +96,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/reports', ReportIndex::class)->name('reports.index');
 
     // Activity Log (Admin and Executive)
-    Route::get('/activity-log', ActivityLogIndex::class)->name('activity-log.index')->middleware('role:ADMIN,EXECUTIVE');
+    Route::get('/activity-log', ActivityLogIndex::class)->name('activity-log.index')->middleware('role:ADMIN');
 
     // Attachments
     Route::prefix('attachments')->name('attachments.')->group(function () {

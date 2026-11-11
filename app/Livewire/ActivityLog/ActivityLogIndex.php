@@ -6,6 +6,12 @@ use Livewire\Component;
 use Livewire\WithPagination;
 use Spatie\Activitylog\Models\Activity;
 
+/**
+ * @property-read \Illuminate\Contracts\Pagination\LengthAwarePaginator $activities
+ * @property-read \Illuminate\Support\Collection $events
+ * @property-read \Illuminate\Support\Collection $subjectTypes
+ * @property-read \Illuminate\Support\Collection $causers
+ */
 class ActivityLogIndex extends Component
 {
     use WithPagination;
@@ -20,6 +26,11 @@ class ActivityLogIndex extends Component
     public int $perPage = 20;
 
     // Reset pagination when filters change
+    public function boot(): void
+    {
+        abort_unless(auth()->user()?->isAdmin(), 403);
+    }
+
     public function updatingSearch()
     {
         $this->resetPage();
