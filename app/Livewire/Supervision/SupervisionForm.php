@@ -10,6 +10,7 @@ use App\Models\Policy;
 use App\Models\School;
 use App\Models\Supervision;
 use App\Services\SupervisionService;
+use App\Support\ThaiDate;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
@@ -124,8 +125,8 @@ class SupervisionForm extends Component
                 'comment' => $i->comment ?? '',
             ])->toArray();
         } else {
-            $this->date = now()->format('Y-m-d');
-            $this->academicYear = (string) (now()->year + 543);
+            $this->date = ThaiDate::now()->format('Y-m-d');
+            $this->academicYear = (string) (ThaiDate::now()->year + 543);
 
             // Initialize default indicators
             foreach ($this->defaultIndicators as $name) {

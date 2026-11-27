@@ -2,6 +2,7 @@
 
 namespace App\Livewire\ActivityLog;
 
+use App\Support\ThaiDate;
 use Livewire\Component;
 use Livewire\WithPagination;
 use Spatie\Activitylog\Models\Activity;
@@ -103,12 +104,12 @@ class ActivityLogIndex extends Component
         }
 
         // Date range filter
-        if ($this->dateFrom) {
-            $query->whereDate('created_at', '>=', $this->dateFrom);
+        if ($from = ThaiDate::startOfDay($this->dateFrom)) {
+            $query->where('created_at', '>=', $from);
         }
 
-        if ($this->dateTo) {
-            $query->whereDate('created_at', '<=', $this->dateTo);
+        if ($to = ThaiDate::startOfDay($this->dateTo)) {
+            $query->where('created_at', '<', $to->addDay());
         }
 
         // Apply pagination

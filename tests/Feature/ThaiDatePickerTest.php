@@ -89,6 +89,27 @@ class ThaiDatePickerTest extends TestCase
             ->assertSet('dateTo', '');
     }
 
+    public function test_activity_log_dates_and_filters_follow_thai_time(): void
+    {
+        $admin = $this->makeAdmin();
+        $marker = 'tz-test-' . Str::random(8);
+        $lateNight = activity()->causedBy($admin)->log($marker);
+        $lateNight->forceFill(['created_at' => '2020-03-10 18:30:00'])->save();
+
+        Livewire::actingAs($admin)
+            ->test(ActivityLogIndex::class)
+            ->set('search', $marker)
+            ->assertSee('11/03/2563')
+            ->assertSee('01:30:00')
+            ->set('dateTo', '2020-03-10')
+            ->assertDontSee('11/03/2563')
+            ->set('dateTo', '')
+            ->set('dateFrom', '2020-03-11')
+            ->assertSee('11/03/2563')
+            ->set('dateFrom', 'not-a-date')
+            ->assertSee('11/03/2563');
+    }
+
     public function test_supervision_form_loads_and_saves_gregorian_date(): void
     {
         $admin = $this->makeAdmin();

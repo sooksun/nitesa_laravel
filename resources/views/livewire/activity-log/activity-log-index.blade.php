@@ -25,7 +25,7 @@
                     </div>
                     <div class="ml-4">
                         <p class="text-sm text-gray-500">วันนี้</p>
-                        <p class="text-2xl font-semibold text-gray-900">{{ number_format(\Spatie\Activitylog\Models\Activity::whereDate('created_at', today())->count()) }}</p>
+                        <p class="text-2xl font-semibold text-gray-900">{{ number_format(\Spatie\Activitylog\Models\Activity::where('created_at', '>=', \App\Support\ThaiDate::startOfToday())->count()) }}</p>
                     </div>
                 </div>
             </div>
@@ -167,8 +167,8 @@
                             <!-- Time -->
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                 <div class="flex flex-col">
-                                    <span class="font-medium">{{ $activity->created_at->format('d/m/') }}{{ $activity->created_at->year + 543 }}</span>
-                                    <span class="text-xs text-gray-500">{{ $activity->created_at->format('H:i:s') }}</span>
+                                    <span class="font-medium">{{ \App\Support\ThaiDate::timestamp($activity->created_at, false) }}</span>
+                                    <span class="text-xs text-gray-500">{{ \App\Support\ThaiDate::time($activity->created_at) }}</span>
                                     <span class="text-xs text-gray-400">{{ $activity->created_at->diffForHumans() }}</span>
                                 </div>
                             </td>

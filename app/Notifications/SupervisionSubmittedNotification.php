@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\Supervision;
+use App\Support\ThaiDate;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -51,7 +52,7 @@ class SupervisionSubmittedNotification extends Notification implements ShouldQue
             ->line('มีการส่งการนิเทศใหม่เพื่อขออนุมัติจากคุณ')
             ->line('**โรงเรียน:** ' . $this->supervision->school->name)
             ->line('**ประเภทการนิเทศ:** ' . $this->supervision->type)
-            ->line('**วันที่นิเทศ:** ' . $this->supervision->date->format('d/m/Y'))
+            ->line('**วันที่นิเทศ:** ' . ThaiDate::format($this->supervision->date))
             ->line('**ผู้นิเทศ:** ' . $this->supervision->user->name)
             ->action('ดูรายละเอียดและพิจารณา', $url)
             ->line('กรุณาพิจารณาอนุมัติหรือส่งกลับเพื่อแก้ไข')
