@@ -59,7 +59,11 @@ class SchoolForm extends Component
         if ($school && $school->exists) {
             $this->school = $school;
             $this->editing = true;
-            $this->fill($school->toArray());
+            // คอลัมน์ที่เป็น NULL ใน DB ต้องไม่ถูก assign ให้ property ชนิด string (จะ TypeError)
+            $this->fill(array_filter(
+                $school->only(array_keys($this->rules())),
+                fn($value) => $value !== null
+            ));
         }
     }
 

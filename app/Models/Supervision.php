@@ -2,12 +2,14 @@
 
 namespace App\Models;
 
+use App\Enums\PolicyLevel;
 use App\Enums\SupervisionStatus;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Str;
@@ -34,6 +36,7 @@ use Illuminate\Support\Str;
  * @property-read Policy|null $ministerPolicyRelation
  * @property-read Policy|null $obecPolicyRelation
  * @property-read Policy|null $areaPolicyRelation
+ * @property-read Collection<int, Policy> $policies
  * @property-read Collection<int, Attachment> $attachments
  * @property-read Collection<int, Indicator> $indicators
  * @property-read Acknowledgement|null $acknowledgement
@@ -109,6 +112,41 @@ class Supervision extends Model
     public function areaPolicyRelation(): BelongsTo
     {
         return $this->belongsTo(Policy::class, 'areaPolicyId');
+    }
+
+    /**
+     * Every policy linked to this supervision; `pivot->level` tells which of the three slots it belongs to.
+     */
+    public function policies(): BelongsToMany
+    {
+        return $this->belongsToMany(Policy::class, 'supervisionpolicy', 'supervisionId', 'policyId')
+            ->using(SupervisionPolicy::class)
+            ->withPivot(['id', 'level', 'position'])
+            ->orderBy('supervisionpolicy.position')
+            ->orderBy('supervisionpolicy.id');
+    }
+
+    /**
+     * @return Collection<int, Policy>
+     */
+    public function policiesFor(PolicyLevel $level): Collection
+    {
+        return $this->policies
+            ->filter(fn(Policy $policy) => $policy->getRelation('pivot')->level === $level)
+            ->values();
+    }
+
+    /**
+     * @return array<string, list<string>> keyed by PolicyLevel::idsKey()
+     */
+    public function policyIdsByLevel(): array
+    {
+        $ids = [];
+        foreach (PolicyLevel::cases() as $level) {
+            $ids[$level->idsKey()] = $this->policiesFor($level)->pluck('id')->all();
+        }
+
+        return $ids;
     }
 
     public function attachments(): HasMany

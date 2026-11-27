@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\PolicyType;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
@@ -40,6 +41,13 @@ class Policy extends Model
                 $model->{$model->getKeyName()} = (string) Str::ulid();
             }
         });
+    }
+
+    public function supervisions(): BelongsToMany
+    {
+        return $this->belongsToMany(Supervision::class, 'supervisionpolicy', 'policyId', 'supervisionId')
+            ->using(SupervisionPolicy::class)
+            ->withPivot(['id', 'level', 'position']);
     }
 
     public function ministerSupervisions(): HasMany

@@ -300,28 +300,30 @@
             </div>
 
             <!-- Policies -->
-            @if($supervision->ministerPolicyRelation || $supervision->obecPolicyRelation || $supervision->areaPolicyRelation)
+            @if($supervision->policies->isNotEmpty())
             <div class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-900/5">
                 <h3 class="text-sm font-semibold text-gray-900 mb-4">นโยบายที่เกี่ยวข้อง</h3>
                 <dl class="space-y-4">
-                    @if($supervision->ministerPolicyRelation)
-                    <div>
-                        <dt class="text-xs text-gray-500">นโยบายกระทรวง</dt>
-                        <dd class="text-sm text-gray-900">{{ $supervision->ministerPolicyRelation->title }}</dd>
-                    </div>
-                    @endif
-                    @if($supervision->obecPolicyRelation)
-                    <div>
-                        <dt class="text-xs text-gray-500">นโยบาย สพฐ.</dt>
-                        <dd class="text-sm text-gray-900">{{ $supervision->obecPolicyRelation->title }}</dd>
-                    </div>
-                    @endif
-                    @if($supervision->areaPolicyRelation)
-                    <div>
-                        <dt class="text-xs text-gray-500">นโยบายเขตพื้นที่</dt>
-                        <dd class="text-sm text-gray-900">{{ $supervision->areaPolicyRelation->title }}</dd>
-                    </div>
-                    @endif
+                    @foreach(\App\Enums\PolicyLevel::cases() as $level)
+                        @php
+                            $levelPolicies = $supervision->policiesFor($level);
+                        @endphp
+                        @if($levelPolicies->isNotEmpty())
+                        <div>
+                            <dt class="text-xs text-gray-500">{{ $level->label() }}</dt>
+                            <dd class="mt-1 text-sm text-gray-900">
+                                <ul class="space-y-1">
+                                    @foreach($levelPolicies as $policy)
+                                        <li>
+                                            @if($policy->code)<span class="font-medium text-gray-500">{{ $policy->code }}</span>@endif
+                                            {{ $policy->title }}
+                                        </li>
+                                    @endforeach
+                                </ul>
+                            </dd>
+                        </div>
+                        @endif
+                    @endforeach
                 </dl>
             </div>
             @endif

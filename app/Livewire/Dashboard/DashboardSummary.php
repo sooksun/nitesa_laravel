@@ -119,12 +119,9 @@ class DashboardSummary extends Component
 
         return Cache::remember($cacheKey, $this->cacheDuration, function () {
             $query = DB::table('supervision')
-                ->join('policy', function ($join) {
-                    $join->on('supervision.ministerPolicyId', '=', 'policy.id')
-                        ->orOn('supervision.obecPolicyId', '=', 'policy.id')
-                        ->orOn('supervision.areaPolicyId', '=', 'policy.id');
-                })
-                ->select('policy.type', DB::raw('count(*) as usage_count'));
+                ->join('supervisionpolicy', 'supervisionpolicy.supervisionId', '=', 'supervision.id')
+                ->join('policy', 'policy.id', '=', 'supervisionpolicy.policyId')
+                ->select('policy.type', DB::raw('count(distinct supervision.id) as usage_count'));
 
             if ($this->academicYear) {
                 $query->where('supervision.academicYear', $this->academicYear);

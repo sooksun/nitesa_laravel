@@ -45,8 +45,8 @@ class TestDataPurger
     }
 
     /**
-     * Deleting a school cascades to its supervisions, their indicators, attachments and
-     * acknowledgements, its improvements, exam results and supervisor assignments.
+     * Deleting a school cascades to its supervisions, their indicators, attachments,
+     * acknowledgements and policy links, its improvements, exam results and supervisor assignments.
      *
      * @return array{schools: int, supervisions: int, networkGroups: int, users: int}
      */

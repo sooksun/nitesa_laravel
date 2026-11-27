@@ -64,50 +64,23 @@
             <!-- Policies -->
             <div class="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-900/5">
                 <h3 class="text-base font-semibold leading-7 text-gray-900 mb-2">นโยบายที่เกี่ยวข้อง</h3>
-                <p class="text-sm text-gray-500 mb-6">เลือกนโยบายที่ใช้ในการนิเทศครั้งนี้</p>
+                <p class="text-sm text-gray-500 mb-6">เลือกนโยบายที่ใช้ในการนิเทศครั้งนี้ ได้มากกว่า 1 รายการในแต่ละระดับ</p>
                 
-                <div class="grid grid-cols-1 gap-6 sm:grid-cols-3">
-                    <div>
-                        <label for="ministerPolicyId" class="block text-sm font-medium leading-6 text-gray-900">นโยบายกระทรวง</label>
-                        <div class="mt-2">
-                            <select wire:model="ministerPolicyId" 
-                                    id="ministerPolicyId"
-                                    class="block w-full rounded-lg border-0 py-2.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-pink-600 sm:text-sm sm:leading-6">
-                                <option value="">ไม่ระบุ</option>
-                                @foreach($this->policies as $policy)
-                                    <option value="{{ $policy->id }}">{{ $policy->code }} - {{ \Illuminate\Support\Str::limit($policy->title, 30) }}</option>
-                                @endforeach
-                            </select>
+                <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+                    @foreach(\App\Enums\PolicyLevel::cases() as $level)
+                        <div wire:key="policy-level-{{ $level->value }}">
+                            <label for="{{ $level->idsKey() }}" class="block text-sm font-medium leading-6 text-gray-900">{{ $level->label() }}</label>
+                            <div class="mt-2">
+                                <x-multi-select wire:model="{{ $level->idsKey() }}"
+                                                id="{{ $level->idsKey() }}"
+                                                :options="$this->policyOptions"
+                                                placeholder="ไม่ระบุ" />
+                            </div>
+                            @if($errors->has($level->idsKey()) || $errors->has($level->idsKey() . '.*'))
+                                <p class="mt-2 text-sm text-red-600">{{ $errors->first($level->idsKey()) ?: $errors->first($level->idsKey() . '.*') }}</p>
+                            @endif
                         </div>
-                    </div>
-
-                    <div>
-                        <label for="obecPolicyId" class="block text-sm font-medium leading-6 text-gray-900">นโยบาย สพฐ.</label>
-                        <div class="mt-2">
-                            <select wire:model="obecPolicyId" 
-                                    id="obecPolicyId"
-                                    class="block w-full rounded-lg border-0 py-2.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-pink-600 sm:text-sm sm:leading-6">
-                                <option value="">ไม่ระบุ</option>
-                                @foreach($this->policies as $policy)
-                                    <option value="{{ $policy->id }}">{{ $policy->code }} - {{ \Illuminate\Support\Str::limit($policy->title, 30) }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label for="areaPolicyId" class="block text-sm font-medium leading-6 text-gray-900">นโยบายเขตพื้นที่</label>
-                        <div class="mt-2">
-                            <select wire:model="areaPolicyId" 
-                                    id="areaPolicyId"
-                                    class="block w-full rounded-lg border-0 py-2.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-pink-600 sm:text-sm sm:leading-6">
-                                <option value="">ไม่ระบุ</option>
-                                @foreach($this->policies as $policy)
-                                    <option value="{{ $policy->id }}">{{ $policy->code }} - {{ \Illuminate\Support\Str::limit($policy->title, 30) }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                    </div>
+                    @endforeach
                 </div>
             </div>
 

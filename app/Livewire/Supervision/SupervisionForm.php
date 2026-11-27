@@ -33,9 +33,9 @@ class SupervisionForm extends Component
     public string $type = 'นิเทศติดตาม';
     public string $date = '';
     public string $academicYear = '';
-    public ?string $ministerPolicyId = null;
-    public ?string $obecPolicyId = null;
-    public ?string $areaPolicyId = null;
+    public array $ministerPolicyIds = [];
+    public array $obecPolicyIds = [];
+    public array $areaPolicyIds = [];
     public string $summary = '';
     public string $suggestions = '';
 
@@ -64,9 +64,7 @@ class SupervisionForm extends Component
             'type' => ['required', 'string', 'max:100'],
             'date' => ['required', 'date'],
             'academicYear' => ['nullable', 'string', 'max:10'],
-            'ministerPolicyId' => ['nullable', 'exists:policy,id'],
-            'obecPolicyId' => ['nullable', 'exists:policy,id'],
-            'areaPolicyId' => ['nullable', 'exists:policy,id'],
+            ...SupervisionService::policyRules(false),
             'summary' => ['required', 'string'],
             'suggestions' => ['required', 'string'],
             'indicators' => ['required', 'array', 'min:1'],
@@ -86,6 +84,12 @@ class SupervisionForm extends Component
         'suggestions.required' => 'กรุณาระบุข้อเสนอแนะ',
         'indicators.required' => 'กรุณาเพิ่มตัวชี้วัดอย่างน้อย 1 รายการ',
         'indicators.min' => 'กรุณาเพิ่มตัวชี้วัดอย่างน้อย 1 รายการ',
+        'ministerPolicyIds.*.exists' => 'นโยบายที่เลือกไม่มีอยู่ในระบบ',
+        'obecPolicyIds.*.exists' => 'นโยบายที่เลือกไม่มีอยู่ในระบบ',
+        'areaPolicyIds.*.exists' => 'นโยบายที่เลือกไม่มีอยู่ในระบบ',
+        'ministerPolicyIds.*.distinct' => 'เลือกนโยบายซ้ำกัน',
+        'obecPolicyIds.*.distinct' => 'เลือกนโยบายซ้ำกัน',
+        'areaPolicyIds.*.distinct' => 'เลือกนโยบายซ้ำกัน',
         'uploads.*.mimes' => 'อนุญาตเฉพาะไฟล์รูปภาพ, PDF, Word และ Excel เท่านั้น',
         'uploads.*.max' => 'ไฟล์แนบต้องมีขนาดไม่เกิน 10 MB',
     ];
@@ -112,9 +116,7 @@ class SupervisionForm extends Component
             $this->type = $supervision->type;
             $this->date = $supervision->date->format('Y-m-d');
             $this->academicYear = $supervision->academicYear ?? '';
-            $this->ministerPolicyId = $supervision->ministerPolicyId;
-            $this->obecPolicyId = $supervision->obecPolicyId;
-            $this->areaPolicyId = $supervision->areaPolicyId;
+            $this->fill($supervision->policyIdsByLevel());
             $this->summary = $supervision->summary;
             $this->suggestions = $supervision->suggestions;
 
@@ -201,9 +203,9 @@ class SupervisionForm extends Component
                 'type' => $this->type,
                 'date' => $this->date,
                 'academicYear' => $this->academicYear ?: null,
-                'ministerPolicyId' => $this->ministerPolicyId ?: null,
-                'obecPolicyId' => $this->obecPolicyId ?: null,
-                'areaPolicyId' => $this->areaPolicyId ?: null,
+                'ministerPolicyIds' => $this->ministerPolicyIds,
+                'obecPolicyIds' => $this->obecPolicyIds,
+                'areaPolicyIds' => $this->areaPolicyIds,
                 'summary' => $this->summary,
                 'suggestions' => $this->suggestions,
             ];
@@ -320,15 +322,33 @@ class SupervisionForm extends Component
     }
 
     /**
-     * Get active policies
+     * Active policies, plus inactive ones this supervision already uses so they stay visible.
      *
      * @return Collection<int, Policy>
      */
     public function getPoliciesProperty(): Collection
     {
+        $selectedIds = array_merge($this->ministerPolicyIds, $this->obecPolicyIds, $this->areaPolicyIds);
+
         return Policy::where('isActive', true)
+            ->when($selectedIds !== [], fn($query) => $query->orWhereIn('id', $selectedIds))
             ->orderBy('code')
             ->get();
+    }
+
+    /**
+     * @return list<array{id: string, code: string|null, label: string}>
+     */
+    public function getPolicyOptionsProperty(): array
+    {
+        return $this->getPoliciesProperty()
+            ->map(fn(Policy $policy) => [
+                'id' => $policy->id,
+                'code' => $policy->code,
+                'label' => $policy->title,
+            ])
+            ->values()
+            ->all();
     }
 
     /**
