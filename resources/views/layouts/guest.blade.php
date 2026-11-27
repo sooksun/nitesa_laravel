@@ -35,11 +35,19 @@
         <img src="{{ asset('black-ribbon.png') }}" alt="Mourning Ribbon" class="w-full h-full object-contain">
     </div>
 
-    <div class="min-h-full flex items-center justify-center p-4">
-        <div class="w-full max-w-md">
-            <!-- Login Card -->
-            <div class="bg-gradient-to-b from-pink-50 to-white rounded-3xl shadow-xl p-8 border border-pink-200">
-                {{ $slot }}
+    <div class="min-h-full flex flex-col">
+        <header class="flex min-h-[100px] items-center pl-[104px] pr-4">
+            <img src="{{ asset('skn1-office-logo.png') }}"
+                 alt="สำนักงานเขตพื้นที่การศึกษาประถมศึกษาสกลนคร เขต 1"
+                 class="h-8 sm:h-10 lg:h-12 w-auto max-w-full object-contain object-left drop-shadow-sm">
+        </header>
+
+        <div class="flex flex-1 items-center justify-center p-4">
+            <div class="w-full max-w-md">
+                <!-- Login Card -->
+                <div class="bg-gradient-to-b from-pink-50 to-white rounded-3xl shadow-xl p-8 border border-pink-200">
+                    {{ $slot }}
+                </div>
             </div>
         </div>
     </div>
