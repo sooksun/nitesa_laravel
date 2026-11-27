@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\Role;
+use App\Models\Improvement;
 use App\Models\NetworkGroup;
 use App\Models\School;
 use App\Models\Supervision;
@@ -90,6 +91,17 @@ class TestDataPurger
         if ($owned > 0) {
             throw new \RuntimeException(
                 "ไม่ลบบัญชีทดสอบ เพราะมีการนิเทศของโรงเรียนจริง {$owned} รายการที่บันทึกโดยบัญชีทดสอบ"
+            );
+        }
+
+        $improvements = Improvement::query()
+            ->whereIn('userId', $this->seededUsers()->select('id'))
+            ->whereNotIn('schoolId', $this->seededSchools()->select('id'))
+            ->count();
+
+        if ($improvements > 0) {
+            throw new \RuntimeException(
+                "ไม่ลบบัญชีทดสอบ เพราะมีแผนพัฒนาของโรงเรียนจริง {$improvements} รายการที่บันทึกโดยบัญชีทดสอบ"
             );
         }
     }

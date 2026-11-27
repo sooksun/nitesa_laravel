@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Improvement;
 use App\Models\NetworkGroup;
 use App\Models\School;
 use App\Models\User;
@@ -103,6 +104,39 @@ class TestDataPurgerTest extends TestCase
         $this->assertNull($seedUser->fresh());
         $this->assertNotNull($realUser->fresh());
         $this->assertSame(0, User::where('email', 'like', '%@nitesa.local')->count());
+    }
+
+    public function test_purge_with_users_refuses_when_a_seed_account_owns_an_improvement_of_a_real_school(): void
+    {
+        $this->user(Str::lower(Str::random(10)) . '@example.org', 'ADMIN');
+        $seedUser = $this->user('purger-' . Str::lower(Str::random(8)) . '@nitesa.local', 'SCHOOL');
+        $real = $this->school('47999904', 'บ้านจริงมีแผนพัฒนา');
+        $seeded = $this->school('1044999901', 'โรงเรียนบ้านทดสอบ 9901');
+        $improvement = Improvement::create(['schoolId' => $real->id, 'userId' => $seedUser->id, 'title' => 'แผนพัฒนาของโรงเรียนจริง']);
+
+        try {
+            app(TestDataPurger::class)->purge(true);
+            $this->fail('expected an exception');
+        } catch (\RuntimeException $e) {
+            $this->assertStringContainsString('แผนพัฒนา', $e->getMessage());
+        }
+
+        $this->assertNotNull($improvement->fresh());
+        $this->assertNotNull($seedUser->fresh());
+        $this->assertNotNull($seeded->fresh());
+    }
+
+    public function test_improvements_of_seeded_schools_do_not_block_removing_seed_accounts(): void
+    {
+        $this->user(Str::lower(Str::random(10)) . '@example.org', 'ADMIN');
+        $seedUser = $this->user('purger-' . Str::lower(Str::random(8)) . '@nitesa.local', 'SCHOOL');
+        $seeded = $this->school('1044999901', 'โรงเรียนบ้านทดสอบ 9901');
+        Improvement::create(['schoolId' => $seeded->id, 'userId' => $seedUser->id, 'title' => 'แผนพัฒนาทดสอบ']);
+
+        app(TestDataPurger::class)->purge(true);
+
+        $this->assertNull($seedUser->fresh());
+        $this->assertNull($seeded->fresh());
     }
 
     public function test_purge_with_users_refuses_when_no_other_active_admin_would_remain(): void
