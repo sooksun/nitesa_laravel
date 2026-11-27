@@ -24,6 +24,16 @@
                     </div>
                 </div>
 
+                @if($importType === 'network_groups')
+                    <label class="flex items-start gap-3 rounded-lg bg-red-50 p-3">
+                        <input wire:model="replaceNetworkGroups" type="checkbox" class="mt-1 h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-600">
+                        <span class="text-sm text-red-900">
+                            แทนที่กลุ่มเครือข่ายเดิมทั้งหมดด้วยไฟล์นี้
+                            <span class="block text-xs text-red-700">กลุ่มเครือข่ายที่ไม่อยู่ในไฟล์จะถูกลบ และโรงเรียนทุกแห่งจะถูกยกเลิกการผูกกับกลุ่มเครือข่าย ต้องนำเข้าไฟล์โรงเรียนอีกครั้งเพื่อผูกใหม่ ข้อมูลโรงเรียนและการนิเทศไม่ถูกลบ</span>
+                        </span>
+                    </label>
+                @endif
+
                 @if($this->isExamImport())
                     <div>
                         <label for="academicYear" class="block text-sm font-medium leading-6 text-gray-900">ปีการศึกษา (พ.ศ.)</label>
@@ -146,6 +156,9 @@
                         <dd class="text-lg font-semibold text-green-900">{{ $results['failed'] }}</dd>
                     </div>
                 </dl>
+                @if($importNote !== '')
+                    <p class="mt-3 text-sm text-green-900">{{ $importNote }}</p>
+                @endif
                 @if(count($examSummary) > 0)
                     <p class="mt-3 text-xs text-green-800">
                         จับคู่ด้วยรหัส {{ $examSummary['matchedBy']['code'] }} ·
