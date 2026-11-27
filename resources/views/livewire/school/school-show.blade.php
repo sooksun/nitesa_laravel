@@ -149,7 +149,7 @@
                                     <div class="mt-1 flex items-center gap-x-2 text-xs text-gray-500">
                                         <span>{{ $supervision->user->name }}</span>
                                         <span>•</span>
-                                        <span>{{ $supervision->date->format('d/m/Y') }}</span>
+                                        <span>{{ \App\Support\ThaiDate::format($supervision->date) }}</span>
                                     </div>
                                 </div>
                                 <div class="flex items-center gap-x-3">

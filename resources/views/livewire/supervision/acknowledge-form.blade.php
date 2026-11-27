@@ -13,7 +13,7 @@
             </div>
             <div>
                 <dt class="text-xs text-gray-500">วันที่นิเทศ</dt>
-                <dd class="text-sm text-gray-900">{{ $supervision->date->format('d/m/Y') }}</dd>
+                <dd class="text-sm text-gray-900">{{ \App\Support\ThaiDate::format($supervision->date) }}</dd>
             </div>
             <div>
                 <dt class="text-xs text-gray-500">ผู้นิเทศ</dt>

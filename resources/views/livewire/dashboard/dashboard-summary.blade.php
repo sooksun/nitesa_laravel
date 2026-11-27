@@ -179,7 +179,7 @@
                     <div>
                         <p class="font-semibold text-gray-900">{{ $supervision->school?->name ?? 'ไม่ระบุโรงเรียน' }}</p>
                         <p class="text-sm text-gray-500">{{ $supervision->type ?? '-' }} • {{ $supervision->user?->name ?? 'ไม่ระบุ' }}</p>
-                        <p class="text-xs text-gray-400 mt-1">{{ $supervision->createdAt?->format('d/m/Y H:i') ?? '-' }}</p>
+                        <p class="text-xs text-gray-400 mt-1">{{ \App\Support\ThaiDate::format($supervision->createdAt, true) }}</p>
                     </div>
                     @php
                         $statusValue = is_object($supervision->status) ? $supervision->status->value : $supervision->status;

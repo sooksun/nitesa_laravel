@@ -9,7 +9,7 @@
             </a>
             <div>
                 <h2 class="text-lg font-semibold text-gray-900">{{ $supervision->school->name }}</h2>
-                <p class="text-sm text-gray-500">{{ $supervision->type }} • {{ $supervision->date->format('d/m/Y') }}</p>
+                <p class="text-sm text-gray-500">{{ $supervision->type }} • {{ \App\Support\ThaiDate::format($supervision->date) }}</p>
             </div>
         </div>
         
@@ -274,7 +274,7 @@
                     </div>
                     <div>
                         <dt class="text-xs text-gray-500">วันที่นิเทศ</dt>
-                        <dd class="text-sm text-gray-900">{{ $supervision->date->format('d/m/Y') }}</dd>
+                        <dd class="text-sm text-gray-900">{{ \App\Support\ThaiDate::format($supervision->date) }}</dd>
                     </div>
                     @if($supervision->academicYear)
                     <div>
@@ -288,12 +288,12 @@
                     </div>
                     <div>
                         <dt class="text-xs text-gray-500">บันทึกเมื่อ</dt>
-                        <dd class="text-sm text-gray-900">{{ $supervision->createdAt?->format('d/m/Y H:i') ?? '-' }}</dd>
+                        <dd class="text-sm text-gray-900">{{ \App\Support\ThaiDate::format($supervision->createdAt, true) }}</dd>
                     </div>
                     @if($supervision->updatedAt && $supervision->updatedAt != $supervision->createdAt)
                     <div>
                         <dt class="text-xs text-gray-500">แก้ไขล่าสุด</dt>
-                        <dd class="text-sm text-gray-900">{{ $supervision->updatedAt->format('d/m/Y H:i') }}</dd>
+                        <dd class="text-sm text-gray-900">{{ \App\Support\ThaiDate::format($supervision->updatedAt, true) }}</dd>
                     </div>
                     @endif
                 </dl>
@@ -342,7 +342,7 @@
                     </div>
                     <div>
                         <dt class="text-xs text-green-700">วันที่รับทราบ</dt>
-                        <dd class="text-sm text-green-900">{{ $supervision->acknowledgement->acknowledgedAt?->format('d/m/Y H:i') ?? '-' }}</dd>
+                        <dd class="text-sm text-green-900">{{ \App\Support\ThaiDate::format($supervision->acknowledgement->acknowledgedAt, true) }}</dd>
                     </div>
                     @if($supervision->acknowledgement->comment)
                     <div>
