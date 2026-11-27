@@ -32,12 +32,14 @@ class PolicyList extends Component
 
     public function toggleActive(Policy $policy)
     {
+        abort_unless(auth()->user()->isAdmin(), 403);
         $policy->update(['isActive' => ! $policy->isActive]);
         $this->swalSuccess($policy->isActive ? 'เปิดใช้งานนโยบายแล้ว' : 'ปิดใช้งานนโยบายแล้ว');
     }
 
     public function confirmDelete(string $id)
     {
+        abort_unless(auth()->user()->isAdmin(), 403);
         $this->deleteId = $id;
         $this->swalConfirmDelete('doDeletePolicy', 'นโยบาย');
     }
@@ -45,6 +47,8 @@ class PolicyList extends Component
     #[On('doDeletePolicy')]
     public function deletePolicy()
     {
+        abort_unless(auth()->user()->isAdmin(), 403);
+
         if ($this->deleteId) {
             $policy = Policy::find($this->deleteId);
             if ($policy) {
@@ -76,6 +80,6 @@ class PolicyList extends Component
             ->paginate(15);
 
         return view('livewire.policy.policy-list', compact('policies'))
-            ->layout('layouts.app', ['title' => 'จัดการนโยบาย', 'header' => 'จัดการนโยบาย']);
+            ->layout('layouts.app', ['title' => 'นโยบายและตัวชี้วัด', 'header' => 'นโยบายและตัวชี้วัด']);
     }
 }

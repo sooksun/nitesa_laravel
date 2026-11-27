@@ -6,10 +6,10 @@ use App\Enums\SupervisionStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Acknowledgement;
 use App\Models\Supervision;
+use App\Services\SupervisionService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Pagination\LengthAwarePaginator;
 
 /**
  * API Controller for Supervision management
@@ -18,11 +18,15 @@ use Illuminate\Pagination\LengthAwarePaginator;
  */
 class SupervisionController extends Controller
 {
+    public function __construct(private readonly SupervisionService $service)
+    {
+    }
+
     /**
      * Get paginated list of supervisions with filters
      *
      * @param Request $request
-     * @return JsonResponse<LengthAwarePaginator>
+     * @return JsonResponse
      */
     public function index(Request $request): JsonResponse
     {
@@ -46,13 +50,12 @@ class SupervisionController extends Controller
             $query->where('academicYear', $request->academicYear);
         }
 
-        // Filter by assigned schools for supervisors
-        if ($request->user()->isSupervisor()) {
-            $assignedSchoolIds = $request->user()->assignedSchools()->pluck('school.id');
-            $query->whereIn('schoolId', $assignedSchoolIds);
+        // SUPERVISOR: assigned schools; SCHOOL: own school only
+        $scopedIds = $request->user()->scopedSchoolIds();
+        if ($scopedIds !== null) {
+            $query->whereIn('schoolId', $scopedIds);
         }
 
-        // School users can only see published supervisions
         if ($request->user()->isSchool()) {
             $query->where('status', SupervisionStatus::PUBLISHED);
         }
@@ -66,7 +69,7 @@ class SupervisionController extends Controller
      * Create a new supervision
      *
      * @param Request $request
-     * @return JsonResponse<Supervision>
+     * @return JsonResponse
      */
     public function store(Request $request): JsonResponse
     {
@@ -91,23 +94,14 @@ class SupervisionController extends Controller
             return response()->json(['message' => 'คุณไม่มีสิทธิ์บันทึกการนิเทศของโรงเรียนนี้'], 403);
         }
 
-        $supervision = Supervision::create([
+        $indicators = $validated['indicators'] ?? [];
+        unset($validated['indicators']);
+
+        $supervision = $this->service->createSupervision([
             ...$validated,
-            'userId' => $request->user()->id,
+            'userId' => $user->id,
             'status' => SupervisionStatus::DRAFT,
-        ]);
-
-        // Create indicators
-        if (! empty($validated['indicators'])) {
-            foreach ($validated['indicators'] as $ind) {
-                $supervision->indicators()->create([
-                    'supervisionId' => $supervision->id,
-                    ...$ind,
-                ]);
-            }
-        }
-
-        $supervision->load(['school', 'user', 'indicators']);
+        ], $indicators);
 
         return response()->json($supervision, 201);
     }
@@ -116,7 +110,7 @@ class SupervisionController extends Controller
      * Get a single supervision with all relationships
      *
      * @param Supervision $supervision
-     * @return JsonResponse<Supervision>
+     * @return JsonResponse
      */
     public function show(Request $request, Supervision $supervision): JsonResponse
     {
@@ -141,7 +135,7 @@ class SupervisionController extends Controller
      *
      * @param Request $request
      * @param Supervision $supervision
-     * @return JsonResponse<Supervision>
+     * @return JsonResponse
      */
     public function update(Request $request, Supervision $supervision): JsonResponse
     {
@@ -172,27 +166,14 @@ class SupervisionController extends Controller
             'indicators.*.comment' => 'nullable|string',
         ]);
 
-        $supervision->update($validated);
-
-        // Update indicators
-        if (isset($validated['indicators'])) {
-            $existingIds = [];
-            foreach ($validated['indicators'] as $ind) {
-                if (! empty($ind['id'])) {
-                    $indicator = $supervision->indicators()->find($ind['id']);
-                    if ($indicator) {
-                        $indicator->update($ind);
-                        $existingIds[] = $ind['id'];
-                    }
-                } else {
-                    $indicator = $supervision->indicators()->create($ind);
-                    $existingIds[] = $indicator->id;
-                }
-            }
-            $supervision->indicators()->whereNotIn('id', $existingIds)->delete();
+        if (array_key_exists('indicators', $validated)) {
+            $indicators = $validated['indicators'];
+            unset($validated['indicators']);
+            $supervision = $this->service->updateSupervision($supervision, $validated, $indicators);
+        } else {
+            $supervision->update($validated);
+            $supervision->load(['school', 'user', 'indicators']);
         }
-
-        $supervision->load(['school', 'user', 'indicators']);
 
         return response()->json($supervision);
     }
@@ -201,7 +182,7 @@ class SupervisionController extends Controller
      * Delete a supervision (only drafts)
      *
      * @param Supervision $supervision
-     * @return JsonResponse<null>
+     * @return JsonResponse
      */
     public function destroy(Request $request, Supervision $supervision): JsonResponse
     {
@@ -226,7 +207,7 @@ class SupervisionController extends Controller
      *
      * @param Request $request
      * @param Supervision $supervision
-     * @return JsonResponse<Supervision>
+     * @return JsonResponse
      */
     public function submit(Request $request, Supervision $supervision): JsonResponse
     {
@@ -239,7 +220,12 @@ class SupervisionController extends Controller
             );
         }
 
-        $supervision->submit();
+        $errors = $this->service->validateForSubmission($supervision);
+        if ($errors !== []) {
+            return response()->json(['message' => 'ข้อมูลไม่ครบ', 'errors' => $errors], 422);
+        }
+
+        $this->service->submit($supervision);
 
         activity()
             ->causedBy($request->user())
@@ -257,7 +243,7 @@ class SupervisionController extends Controller
      *
      * @param Request $request
      * @param Supervision $supervision
-     * @return JsonResponse<Supervision>
+     * @return JsonResponse
      */
     public function approve(Request $request, Supervision $supervision): JsonResponse
     {
@@ -268,7 +254,7 @@ class SupervisionController extends Controller
             );
         }
 
-        $supervision->approve();
+        $this->service->approve($supervision);
 
         activity()
             ->causedBy($request->user())
@@ -291,7 +277,7 @@ class SupervisionController extends Controller
      *
      * @param Request $request
      * @param Supervision $supervision
-     * @return JsonResponse<Supervision>
+     * @return JsonResponse
      */
     public function reject(Request $request, Supervision $supervision): JsonResponse
     {
@@ -303,20 +289,10 @@ class SupervisionController extends Controller
         }
 
         $validated = $request->validate([
-            'reason' => ['nullable', 'string', 'max:500'],
+            'reason' => ['required', 'string', 'max:500'],
         ]);
 
-        $supervision->reject();
-
-        $logMessage = 'ส่งกลับเพื่อปรับปรุง';
-        if (! empty($validated['reason'])) {
-            $logMessage .= ': ' . $validated['reason'];
-        }
-
-        activity()
-            ->causedBy($request->user())
-            ->performedOn($supervision)
-            ->log($logMessage);
+        $this->service->reject($supervision, $validated['reason'], $request->user());
 
         // ส่ง notification ไปยังผู้นิเทศที่สร้างการนิเทศนี้
         $supervision->user->notify(
@@ -335,10 +311,12 @@ class SupervisionController extends Controller
      *
      * @param Request $request
      * @param Supervision $supervision
-     * @return JsonResponse<Supervision>
+     * @return JsonResponse
      */
     public function publish(Request $request, Supervision $supervision): JsonResponse
     {
+        $this->authorizeOwner($request, $supervision);
+
         if (! $supervision->canPublish()) {
             return response()->json(
                 ['message' => 'ไม่สามารถเผยแพร่การนิเทศนี้ได้'],
@@ -346,7 +324,7 @@ class SupervisionController extends Controller
             );
         }
 
-        $supervision->publish();
+        $this->service->publish($supervision);
 
         activity()
             ->causedBy($request->user())
@@ -364,10 +342,12 @@ class SupervisionController extends Controller
      *
      * @param Request $request
      * @param Supervision $supervision
-     * @return JsonResponse<Supervision>
+     * @return JsonResponse
      */
     public function acknowledge(Request $request, Supervision $supervision): JsonResponse
     {
+        abort_unless($request->user()->canAccessSupervision($supervision), 403, 'คุณไม่มีสิทธิ์เข้าถึงการนิเทศนี้');
+
         if ($supervision->status !== SupervisionStatus::PUBLISHED) {
             return response()->json(
                 ['message' => 'การนิเทศยังไม่ถูกเผยแพร่'],
@@ -438,12 +418,7 @@ class SupervisionController extends Controller
      */
     protected function notifySchool(Supervision $supervision): void
     {
-        // Find users with SCHOOL role
-        $schoolUsers = \App\Models\User::where('role', 'SCHOOL')
-            ->where('isActive', true)
-            ->get();
-
-        foreach ($schoolUsers as $user) {
+        foreach ($this->service->schoolRecipients($supervision) as $user) {
             $user->notify(
                 new \App\Notifications\SupervisionPublishedNotification($supervision)
             );

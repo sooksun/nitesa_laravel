@@ -34,6 +34,10 @@ class SchoolList extends Component
 
     public function sortBy($column)
     {
+        if (! in_array($column, ['name', 'code', 'district', 'studentCount', 'teacherCount'], true)) {
+            return;
+        }
+
         if ($this->sortBy === $column) {
             $this->sortDirection = $this->sortDirection === 'asc' ? 'desc' : 'asc';
         } else {
@@ -44,6 +48,7 @@ class SchoolList extends Component
 
     public function confirmDelete(string $id)
     {
+        abort_unless(auth()->user()->isAdmin(), 403);
         $this->deleteId = $id;
         $this->swalConfirmDelete('doDeleteSchool', 'โรงเรียน');
     }
@@ -51,6 +56,8 @@ class SchoolList extends Component
     #[On('doDeleteSchool')]
     public function deleteSchool()
     {
+        abort_unless(auth()->user()->isAdmin(), 403);
+
         if ($this->deleteId) {
             $school = School::find($this->deleteId);
             if ($school) {
@@ -74,7 +81,8 @@ class SchoolList extends Component
     public function render()
     {
         $query = School::query()
-            ->with(['networkGroupRelation', 'supervisions'])
+            ->with('networkGroupRelation')
+            ->withCount('supervisions')
             ->when($this->search, function ($q) {
                 $q->where(function ($q) {
                     $q->where('name', 'like', "%{$this->search}%")
@@ -83,12 +91,14 @@ class SchoolList extends Component
             })
             ->when($this->district, fn($q) => $q->where('district', $this->district))
             ->when($this->networkGroupId, fn($q) => $q->where('networkGroupId', $this->networkGroupId))
-            ->orderBy($this->sortBy, $this->sortDirection);
+            ->orderBy(
+                in_array($this->sortBy, ['name', 'code', 'district', 'studentCount', 'teacherCount'], true) ? $this->sortBy : 'name',
+                $this->sortDirection === 'desc' ? 'desc' : 'asc'
+            );
 
-        // Filter by assigned schools for supervisors
-        if (auth()->user()->isSupervisor()) {
-            $assignedSchoolIds = auth()->user()->assignedSchools()->pluck('school.id');
-            $query->whereIn('id', $assignedSchoolIds);
+        $scopedIds = auth()->user()->scopedSchoolIds();
+        if ($scopedIds !== null) {
+            $query->whereIn('id', $scopedIds);
         }
 
         $schools = $query->paginate(15);

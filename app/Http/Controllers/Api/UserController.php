@@ -91,12 +91,12 @@ class UserController extends Controller
 
     public function assignSchools(Request $request, User $user): JsonResponse
     {
-        if ($user->role !== Role::SUPERVISOR) {
-            return response()->json(['message' => 'ผู้ใช้ต้องเป็นศึกษานิเทศก์เท่านั้น'], 403);
+        if (! in_array($user->role, [Role::SUPERVISOR, Role::SCHOOL], true)) {
+            return response()->json(['message' => 'ผู้ใช้ต้องเป็นศึกษานิเทศก์หรือโรงเรียนเท่านั้น'], 403);
         }
 
         $validated = $request->validate([
-            'school_ids' => 'required|array',
+            'school_ids' => $user->role === Role::SCHOOL ? 'required|array|size:1' : 'required|array',
             'school_ids.*' => 'exists:school,id',
         ]);
 

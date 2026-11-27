@@ -128,7 +128,7 @@
 ```
 
 ### Authentication
-ต้องใช้ Sanctum Token และมี role เป็น `ADMIN` หรือ `EXECUTIVE`
+ต้องใช้ Sanctum Token และมี role เป็น `ADMIN`
 
 ### Endpoints
 

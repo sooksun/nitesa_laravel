@@ -19,7 +19,7 @@ use Illuminate\Support\Str;
  * @property string|null $fileType
  * @property int $fileSize
  * @property \Illuminate\Support\Carbon|null $uploadedAt
- * @property-read Supervision $supervision
+ * @property-read Supervision|null $supervision
  * @property-read string $fileSizeFormatted
  */
 class Attachment extends Model
@@ -50,7 +50,7 @@ class Attachment extends Model
         parent::boot();
         static::creating(function ($model) {
             if (empty($model->{$model->getKeyName()})) {
-                $model->{$model->getKeyName()} = Str::ulid();
+                $model->{$model->getKeyName()} = (string) Str::ulid();
             }
         });
     }

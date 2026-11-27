@@ -5,6 +5,7 @@
             <h2 class="text-lg font-semibold text-gray-900">รายการนโยบาย</h2>
             <p class="mt-1 text-sm text-gray-500">จัดการนโยบายสำหรับการนิเทศติดตาม</p>
         </div>
+        @if(auth()->user()->isAdmin())
         <div class="mt-4 sm:mt-0">
             <a href="{{ route('policies.create') }}" 
                class="inline-flex items-center rounded-lg bg-pink-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-pink-500 transition-colors">
@@ -14,6 +15,7 @@
                 เพิ่มนโยบาย
             </a>
         </div>
+        @endif
     </div>
 
     <!-- Filters -->
@@ -85,13 +87,20 @@
                             </span>
                         </td>
                         <td class="whitespace-nowrap px-3 py-4 text-sm">
+                            @if(auth()->user()->isAdmin())
                             <button wire:click="toggleActive('{{ $policy->id }}')" 
                                     class="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ring-1 ring-inset cursor-pointer transition-colors
                                     {{ $policy->isActive ? 'bg-green-50 text-green-700 ring-green-600/20 hover:bg-green-100' : 'bg-gray-50 text-gray-600 ring-gray-500/20 hover:bg-gray-100' }}">
                                 {{ $policy->isActive ? 'ใช้งาน' : 'ไม่ใช้งาน' }}
                             </button>
+                            @else
+                            <span class="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ring-1 ring-inset {{ $policy->isActive ? 'bg-green-50 text-green-700 ring-green-600/20' : 'bg-gray-50 text-gray-600 ring-gray-500/20' }}">
+                                {{ $policy->isActive ? 'ใช้งาน' : 'ไม่ใช้งาน' }}
+                            </span>
+                            @endif
                         </td>
                         <td class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
+                            @if(auth()->user()->isAdmin())
                             <div class="flex items-center justify-end gap-2">
                                 <a href="{{ route('policies.edit', $policy) }}" class="text-gray-400 hover:text-blue-600" title="แก้ไข">
                                     <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
@@ -106,6 +115,7 @@
                                     </svg>
                                 </button>
                             </div>
+                            @endif
                         </td>
                     </tr>
                 @empty

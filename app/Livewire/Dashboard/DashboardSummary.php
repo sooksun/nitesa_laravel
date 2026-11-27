@@ -19,7 +19,7 @@ class DashboardSummary extends Component
 
     public function mount()
     {
-        $this->academicYears = Cache::remember('dashboard.academic_years', 3600, function () {
+        $this->academicYears = Cache::remember(self::cacheKey('academic_years'), 3600, function () {
             return Supervision::distinct()
                 ->orderBy('academicYear', 'desc')
                 ->pluck('academicYear')
@@ -34,17 +34,20 @@ class DashboardSummary extends Component
     public function getStatsProperty(): array
     {
         $user = auth()->user();
-        $cacheKey = "dashboard.stats.{$user->id}.{$this->academicYear}";
+        $cacheKey = self::cacheKey("stats.{$user->id}.{$this->academicYear}");
 
         return Cache::remember($cacheKey, $this->cacheDuration, function () use ($user) {
             $schoolQuery = School::query();
             $supervisionQuery = DB::table('supervision');
             $userCount = User::count();
 
-            if ($user->isSupervisor()) {
-                $assignedSchoolIds = $user->assignedSchools()->pluck('school.id')->toArray();
-                $schoolQuery->whereIn('id', $assignedSchoolIds);
-                $supervisionQuery->whereIn('schoolId', $assignedSchoolIds);
+            $scopedIds = $user->scopedSchoolIds();
+            if ($scopedIds !== null) {
+                $schoolQuery->whereIn('id', $scopedIds);
+                $supervisionQuery->whereIn('schoolId', $scopedIds);
+            }
+            if ($user->isSchool()) {
+                $supervisionQuery->where('status', 'PUBLISHED');
             }
 
             if ($this->academicYear) {
@@ -69,7 +72,7 @@ class DashboardSummary extends Component
     public function getStatusChartDataProperty(): array
     {
         $user = auth()->user();
-        $cacheKey = "dashboard.status_chart.{$user->id}.{$this->academicYear}";
+        $cacheKey = self::cacheKey("status_chart.{$user->id}.{$this->academicYear}");
 
         return Cache::remember($cacheKey, $this->cacheDuration, function () use ($user) {
             $query = DB::table('supervision');
@@ -78,9 +81,12 @@ class DashboardSummary extends Component
                 $query->where('academicYear', $this->academicYear);
             }
 
-            if ($user->isSupervisor()) {
-                $assignedSchoolIds = $user->assignedSchools()->pluck('school.id')->toArray();
-                $query->whereIn('schoolId', $assignedSchoolIds);
+            $scopedIds = $user->scopedSchoolIds();
+            if ($scopedIds !== null) {
+                $query->whereIn('schoolId', $scopedIds);
+            }
+            if ($user->isSchool()) {
+                $query->where('status', 'PUBLISHED');
             }
 
             $results = $query
@@ -109,7 +115,7 @@ class DashboardSummary extends Component
 
     public function getPolicyUsageProperty(): array
     {
-        $cacheKey = "dashboard.policy_usage.{$this->academicYear}";
+        $cacheKey = self::cacheKey("policy_usage.{$this->academicYear}");
 
         return Cache::remember($cacheKey, $this->cacheDuration, function () {
             $query = DB::table('supervision')
@@ -158,7 +164,7 @@ class DashboardSummary extends Component
 
     public function getIndicatorRadarProperty(): array
     {
-        $cacheKey = "dashboard.indicator_radar.{$this->academicYear}";
+        $cacheKey = self::cacheKey("indicator_radar.{$this->academicYear}");
 
         return Cache::remember($cacheKey, $this->cacheDuration, function () {
             $query = DB::table('indicator')
@@ -189,7 +195,7 @@ class DashboardSummary extends Component
 
     public function getIndicatorDonutProperty(): array
     {
-        $cacheKey = "dashboard.indicator_donut.{$this->academicYear}";
+        $cacheKey = self::cacheKey("indicator_donut.{$this->academicYear}");
 
         return Cache::remember($cacheKey, $this->cacheDuration, function () {
             $query = DB::table('indicator')
@@ -222,7 +228,7 @@ class DashboardSummary extends Component
 
     public function getYearlyTrendProperty(): array
     {
-        $cacheKey = 'dashboard.yearly_trend';
+        $cacheKey = self::cacheKey('yearly_trend');
 
         return Cache::remember($cacheKey, 3600, function () { // Cache 1 hour
             $data = DB::table('supervision')
@@ -240,7 +246,7 @@ class DashboardSummary extends Component
 
     public function getNetworkGroupChartProperty(): array
     {
-        $cacheKey = "dashboard.network_group.{$this->academicYear}";
+        $cacheKey = self::cacheKey("network_group.{$this->academicYear}");
 
         return Cache::remember($cacheKey, $this->cacheDuration, function () {
             $query = DB::table('supervision')
@@ -266,7 +272,7 @@ class DashboardSummary extends Component
 
     public function getDistrictChartProperty(): array
     {
-        $cacheKey = "dashboard.district.{$this->academicYear}";
+        $cacheKey = self::cacheKey("district.{$this->academicYear}");
 
         return Cache::remember($cacheKey, $this->cacheDuration, function () {
             $query = DB::table('supervision')
@@ -291,7 +297,7 @@ class DashboardSummary extends Component
 
     public function getSupervisorPerformanceProperty(): array
     {
-        $cacheKey = "dashboard.supervisor_performance.{$this->academicYear}";
+        $cacheKey = self::cacheKey("supervisor_performance.{$this->academicYear}");
 
         return Cache::remember($cacheKey, $this->cacheDuration, function () {
             $query = DB::table('supervision')
@@ -323,16 +329,19 @@ class DashboardSummary extends Component
     public function getRecentSupervisionsProperty()
     {
         $user = auth()->user();
-        $cacheKey = "dashboard.recent_supervisions.{$user->id}";
+        $cacheKey = self::cacheKey("recent_supervisions.{$user->id}");
 
         return Cache::remember($cacheKey, 60, function () use ($user) { // Cache 1 minute
             $query = Supervision::with(['school', 'user'])
                 ->orderBy('createdAt', 'desc')
                 ->limit(5);
 
-            if ($user->isSupervisor()) {
-                $assignedSchoolIds = $user->assignedSchools()->pluck('school.id')->toArray();
-                $query->whereIn('schoolId', $assignedSchoolIds);
+            $scopedIds = $user->scopedSchoolIds();
+            if ($scopedIds !== null) {
+                $query->whereIn('schoolId', $scopedIds);
+            }
+            if ($user->isSchool()) {
+                $query->where('status', \App\Enums\SupervisionStatus::PUBLISHED);
             }
 
             return $query->get();
@@ -345,36 +354,14 @@ class DashboardSummary extends Component
      */
     public static function clearCache(?string $academicYear = null): void
     {
-        $tags = ['dashboard'];
+        // Every dashboard key embeds this version, so bumping it invalidates all of them
+        // on any cache store (file/database stores do not support tags).
+        Cache::forever('dashboard.version', (int) Cache::get('dashboard.version', 0) + 1);
+    }
 
-        if ($academicYear) {
-            $tags[] = "dashboard.{$academicYear}";
-        }
-
-        // Clear all dashboard related cache
-        Cache::tags($tags)->flush();
-
-        // Also clear specific keys
-        Cache::forget('dashboard.academic_years');
-        Cache::forget('dashboard.yearly_trend');
-
-        if ($academicYear) {
-            $patterns = [
-                "dashboard.stats.*.{$academicYear}",
-                "dashboard.status_chart.*.{$academicYear}",
-                "dashboard.policy_usage.{$academicYear}",
-                "dashboard.indicator_radar.{$academicYear}",
-                "dashboard.indicator_donut.{$academicYear}",
-                "dashboard.network_group.{$academicYear}",
-                "dashboard.district.{$academicYear}",
-                "dashboard.supervisor_performance.{$academicYear}",
-            ];
-
-            foreach ($patterns as $pattern) {
-                // Note: Laravel doesn't support wildcard cache deletion
-                // You may need to use Redis or implement custom cache clearing
-            }
-        }
+    protected static function cacheKey(string $key): string
+    {
+        return 'dashboard.v' . (int) Cache::get('dashboard.version', 0) . '.' . $key;
     }
 
     public function render()

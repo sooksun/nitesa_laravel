@@ -2,8 +2,11 @@
 
 namespace App\Services;
 
+use App\Enums\Role;
 use App\Models\Indicator;
 use App\Models\Supervision;
+use App\Models\User;
+use Spatie\Activitylog\Models\Activity;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -50,9 +53,7 @@ class SupervisionService
         return DB::transaction(function () use ($supervision, $data, $indicators) {
             $supervision->update($data);
 
-            if (isset($indicators)) {
-                $this->syncIndicators($supervision, $indicators);
-            }
+            $this->syncIndicators($supervision, $indicators);
 
             return $supervision->load(['school', 'user', 'indicators']);
         });
@@ -67,7 +68,7 @@ class SupervisionService
      */
     protected function createIndicators(Supervision $supervision, array $indicators): Collection
     {
-        $created = collect();
+        $created = new Collection();
 
         foreach ($indicators as $indicatorData) {
             if (empty($indicatorData['name'])) {
@@ -184,7 +185,7 @@ class SupervisionService
      * @param string|null $reason Rejection reason
      * @return bool Success status
      */
-    public function reject(Supervision $supervision, ?string $reason = null): bool
+    public function reject(Supervision $supervision, ?string $reason = null, ?User $causer = null): bool
     {
         if (! $supervision->canReject()) {
             Log::warning('Cannot reject supervision', [
@@ -197,15 +198,58 @@ class SupervisionService
 
         $result = $supervision->reject();
 
-        if ($result && $reason) {
-            // Store rejection reason if needed
-            Log::info('Supervision rejected', [
-                'supervision_id' => $supervision->id,
-                'reason' => $reason,
-            ]);
+        if ($result) {
+            $reason = $reason !== null ? trim($reason) : '';
+
+            activity()
+                ->causedBy($causer)
+                ->performedOn($supervision)
+                ->withProperties(['reason' => $reason !== '' ? $reason : null])
+                ->log('ส่งกลับเพื่อปรับปรุง' . ($reason !== '' ? ': ' . $reason : ''));
         }
 
         return $result;
+    }
+
+    /**
+     * Latest reason recorded when the supervision was sent back for improvement.
+     */
+    public function latestRejectionReason(Supervision $supervision): ?string
+    {
+        $activity = Activity::query()
+            ->where('subject_type', $supervision->getMorphClass())
+            ->where('subject_id', $supervision->id)
+            ->where('description', 'like', 'ส่งกลับเพื่อปรับปรุง%')
+            ->latest('id')
+            ->first();
+
+        if (! $activity) {
+            return null;
+        }
+
+        $reason = $activity->getExtraProperty('reason');
+        if ($reason) {
+            return $reason;
+        }
+
+        // Older entries stored the reason only in the description ("ส่งกลับเพื่อปรับปรุง: <reason>")
+        $parts = explode(': ', $activity->description, 2);
+
+        return $parts[1] ?? null;
+    }
+
+    /**
+     * Active SCHOOL-role users bound to the supervision's school.
+     *
+     * @return \Illuminate\Support\Collection<int, User>
+     */
+    public function schoolRecipients(Supervision $supervision): \Illuminate\Support\Collection
+    {
+        return User::query()
+            ->where('role', Role::SCHOOL->value)
+            ->where('isActive', true)
+            ->whereHas('assignedSchools', fn ($q) => $q->where('school.id', $supervision->schoolId))
+            ->get();
     }
 
     /**

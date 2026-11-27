@@ -46,7 +46,7 @@ class School extends Model
         parent::boot();
         static::creating(function ($model) {
             if (empty($model->{$model->getKeyName()})) {
-                $model->{$model->getKeyName()} = Str::ulid();
+                $model->{$model->getKeyName()} = (string) Str::ulid();
             }
         });
     }
@@ -69,6 +69,11 @@ class School extends Model
     public function improvements(): HasMany
     {
         return $this->hasMany(Improvement::class, 'schoolId');
+    }
+
+    public function examResults(): HasMany
+    {
+        return $this->hasMany(ExamResult::class, 'schoolId');
     }
 
     public function getLastSupervisionAttribute()

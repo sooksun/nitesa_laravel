@@ -42,9 +42,9 @@ class SupervisionList extends Component
     {
         $query = School::orderBy('name');
 
-        if (auth()->user()->isSupervisor()) {
-            $assignedSchoolIds = auth()->user()->assignedSchools()->pluck('school.id');
-            $query->whereIn('id', $assignedSchoolIds);
+        $scopedIds = auth()->user()->scopedSchoolIds();
+        if ($scopedIds !== null) {
+            $query->whereIn('id', $scopedIds);
         }
 
         return $query->get();
@@ -110,16 +110,13 @@ class SupervisionList extends Component
             ->when($this->academicYear, fn($q) => $q->where('academicYear', $this->academicYear))
             ->orderBy('date', 'desc');
 
-        // Filter by assigned schools for supervisors
-        if (auth()->user()->isSupervisor()) {
-            $assignedSchoolIds = auth()->user()->assignedSchools()->pluck('school.id');
-            $query->whereIn('schoolId', $assignedSchoolIds);
+        // SUPERVISOR: assigned schools; SCHOOL: own school only
+        $scopedIds = auth()->user()->scopedSchoolIds();
+        if ($scopedIds !== null) {
+            $query->whereIn('schoolId', $scopedIds);
         }
 
-        // School users can only see their own school's supervisions
         if (auth()->user()->isSchool()) {
-            // Assuming the school user is linked to a school somehow
-            // For now, show only published supervisions
             $query->where('status', SupervisionStatus::PUBLISHED);
         }
 

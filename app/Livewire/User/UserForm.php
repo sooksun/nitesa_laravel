@@ -19,6 +19,7 @@ class UserForm extends Component
     public string $password_confirmation = '';
     public string $role = 'SCHOOL';
     public array $assignedSchools = [];
+    public string $schoolId = '';
 
     protected function rules(): array
     {
@@ -27,6 +28,7 @@ class UserForm extends Component
             'email' => ['required', 'email', 'max:255'],
             'role' => ['required', 'in:ADMIN,SUPERVISOR,SCHOOL,EXECUTIVE'],
             'assignedSchools' => ['array'],
+            'schoolId' => ['required_if:role,SCHOOL', 'nullable', 'exists:school,id'],
         ];
 
         if ($this->editing) {
@@ -48,6 +50,7 @@ class UserForm extends Component
         'password.required' => 'กรุณาระบุรหัสผ่าน',
         'password.min' => 'รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร',
         'password.confirmed' => 'รหัสผ่านไม่ตรงกัน',
+        'schoolId.required_if' => 'กรุณาเลือกโรงเรียนของผู้ใช้งาน',
     ];
 
     public function mount(?User $user = null)
@@ -59,6 +62,7 @@ class UserForm extends Component
             $this->email = $user->email;
             $this->role = $user->role->value;
             $this->assignedSchools = $user->assignedSchools()->pluck('school.id')->toArray();
+            $this->schoolId = $user->isSchool() ? (string) ($this->assignedSchools[0] ?? '') : '';
         }
     }
 
@@ -85,9 +89,11 @@ class UserForm extends Component
             $message = 'เพิ่มผู้ใช้เรียบร้อยแล้ว';
         }
 
-        // Sync assigned schools for supervisors
+        // SUPERVISOR: schools in charge; SCHOOL: the single school the account belongs to
         if ($this->role === 'SUPERVISOR') {
             $user->assignedSchools()->sync($this->assignedSchools);
+        } elseif ($this->role === 'SCHOOL') {
+            $user->assignedSchools()->sync([$this->schoolId]);
         } else {
             $user->assignedSchools()->detach();
         }

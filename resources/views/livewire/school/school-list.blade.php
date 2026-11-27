@@ -106,7 +106,7 @@
                         </td>
                         <td class="whitespace-nowrap px-3 py-4 text-sm">
                             <span class="inline-flex items-center rounded-full bg-pink-50 px-2 py-1 text-xs font-medium text-pink-700 ring-1 ring-inset ring-pink-600/20">
-                                {{ $school->supervisions->count() }} ครั้ง
+                                {{ $school->supervisions_count }} ครั้ง
                             </span>
                         </td>
                         <td class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
