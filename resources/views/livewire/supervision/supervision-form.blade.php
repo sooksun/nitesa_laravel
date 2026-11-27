@@ -39,10 +39,9 @@
                     <div class="sm:col-span-2">
                         <label for="date" class="block text-sm font-medium leading-6 text-gray-900">วันที่นิเทศ <span class="text-red-500">*</span></label>
                         <div class="mt-2">
-                            <input wire:model="date" 
-                                   type="date" 
+                            <x-thai-date-picker wire:model="date"
                                    id="date"
-                                   class="block w-full rounded-lg border-0 py-2.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-pink-600 sm:text-sm sm:leading-6 @error('date') ring-red-300 @enderror">
+                                   class="block w-full rounded-lg border-0 py-2.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-pink-600 sm:text-sm sm:leading-6 {{ $errors->has('date') ? 'ring-red-300' : '' }}" />
                         </div>
                         @error('date')
                             <p class="mt-2 text-sm text-red-600">{{ $message }}</p>

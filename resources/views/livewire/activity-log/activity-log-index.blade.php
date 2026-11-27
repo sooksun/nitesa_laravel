@@ -122,17 +122,15 @@
             <!-- Date From -->
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">ตั้งแต่วันที่</label>
-                <input type="date" 
-                       wire:model.live="dateFrom"
-                       class="w-full rounded-lg border-gray-300 shadow-sm focus:border-pink-500 focus:ring-pink-500">
+                <x-thai-date-picker wire:model.live="dateFrom"
+                       class="w-full rounded-lg border-gray-300 shadow-sm focus:border-pink-500 focus:ring-pink-500" />
             </div>
 
             <!-- Date To -->
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">ถึงวันที่</label>
-                <input type="date" 
-                       wire:model.live="dateTo"
-                       class="w-full rounded-lg border-gray-300 shadow-sm focus:border-pink-500 focus:ring-pink-500">
+                <x-thai-date-picker wire:model.live="dateTo"
+                       class="w-full rounded-lg border-gray-300 shadow-sm focus:border-pink-500 focus:ring-pink-500" />
             </div>
         </div>
     </div>
@@ -169,7 +167,7 @@
                             <!-- Time -->
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                 <div class="flex flex-col">
-                                    <span class="font-medium">{{ $activity->created_at->format('d/m/Y') }}</span>
+                                    <span class="font-medium">{{ $activity->created_at->format('d/m/') }}{{ $activity->created_at->year + 543 }}</span>
                                     <span class="text-xs text-gray-500">{{ $activity->created_at->format('H:i:s') }}</span>
                                     <span class="text-xs text-gray-400">{{ $activity->created_at->diffForHumans() }}</span>
                                 </div>
