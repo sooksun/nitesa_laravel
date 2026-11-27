@@ -8,6 +8,8 @@ use App\Models\Policy;
 use App\Models\School;
 use App\Services\Exam\InvalidExamFileException;
 use App\Services\ExamResultImporter;
+use App\Services\Import\NetworkGroupImporter;
+use App\Services\Import\SchoolRowMapper;
 use Illuminate\Support\Facades\Log;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -25,6 +27,10 @@ class ImportIndex extends Component
     public string $academicYear = '';
     public bool $syncSchools = false;
     public array $examSummary = [];
+    public bool $replaceNetworkGroups = false;
+    public string $importNote = '';
+
+    private ?SchoolRowMapper $schoolMapper = null;
 
     private const EXAM_TYPES = [
         'exam_rt' => 'rt',
@@ -49,6 +55,8 @@ class ImportIndex extends Component
         $this->importErrors = [];
         $this->examSummary = [];
         $this->syncSchools = false;
+        $this->replaceNetworkGroups = false;
+        $this->importNote = '';
     }
 
     public function preview(): void
@@ -134,6 +142,8 @@ class ImportIndex extends Component
 
         $this->importErrors = [];
         $this->results = [];
+        $this->importNote = '';
+        $this->schoolMapper = null;
         $this->importing = true;
 
         try {
@@ -143,7 +153,17 @@ class ImportIndex extends Component
 
             // Remove header row
             /** @var array<int, string> $headers */
-            $headers = array_shift($data) ?? [];
+            $headers = array_map(fn($header) => trim((string) $header), array_shift($data) ?? []);
+            $data = array_filter($data, fn(array $row) => trim(implode('', array_map('strval', $row))) !== '');
+
+            if ($this->importType === 'network_groups' && $this->replaceNetworkGroups) {
+                $this->replaceGroups(array_map(fn(array $row) => array_combine($headers, $row), $data));
+                $this->importing = false;
+                $this->file = null;
+                $this->replaceNetworkGroups = false;
+
+                return;
+            }
 
             $imported = 0;
             $failed = 0;
@@ -186,29 +206,34 @@ class ImportIndex extends Component
         $this->file = null;
     }
 
-    private function importSchool(array $row, array $headers): void
+    /**
+     * @param array<int, array<string, mixed>> $rows
+     */
+    private function replaceGroups(array $rows): void
     {
-        $data = array_combine($headers, $row);
+        try {
+            $result = app(NetworkGroupImporter::class)->import($rows, true);
+        } catch (\InvalidArgumentException $e) {
+            $this->importErrors[] = $e->getMessage() . ' — ยังไม่มีการเปลี่ยนแปลงข้อมูล';
 
-        if (empty($data['code']) || empty($data['name'])) {
-            throw new \Exception('ข้อมูลไม่ครบถ้วน (ต้องมี code และ name)');
+            return;
         }
 
-        School::updateOrCreate(
-            ['code' => $data['code']],
-            [
-                'name' => $data['name'],
-                'province' => $data['province'] ?? null,
-                'district' => $data['district'] ?? '',
-                'subDistrict' => $data['subDistrict'] ?? $data['sub_district'] ?? null,
-                'address' => $data['address'] ?? null,
-                'phone' => $data['phone'] ?? null,
-                'email' => $data['email'] ?? null,
-                'principalName' => $data['principalName'] ?? $data['principal_name'] ?? null,
-                'studentCount' => (int) ($data['studentCount'] ?? $data['student_count'] ?? 0),
-                'teacherCount' => (int) ($data['teacherCount'] ?? $data['teacher_count'] ?? 0),
-            ]
-        );
+        $this->results = ['total' => count($rows), 'imported' => $result['imported'], 'failed' => 0];
+        $this->importNote = "ลบกลุ่มเครือข่ายเดิม {$result['deleted']} กลุ่ม และยกเลิกการผูกโรงเรียน {$result['detached']} แห่ง "
+            . 'กรุณานำเข้าไฟล์โรงเรียนต่อเพื่อผูกโรงเรียนกับกลุ่มเครือข่ายใหม่';
+        $this->dispatch('swal:success', [
+            'title' => 'สำเร็จ!',
+            'text' => "แทนที่กลุ่มเครือข่ายเรียบร้อย: {$result['imported']} กลุ่ม",
+        ]);
+    }
+
+    private function importSchool(array $row, array $headers): void
+    {
+        $this->schoolMapper ??= new SchoolRowMapper(NetworkGroup::query()->get(['id', 'code', 'name'])->toArray());
+        $mapped = $this->schoolMapper->map(array_combine($headers, $row));
+
+        School::updateOrCreate(['code' => $mapped['code']], $mapped['attributes']);
     }
 
     private function importPolicy(array $row, array $headers): void
