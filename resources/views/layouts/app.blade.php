@@ -139,16 +139,18 @@
             <!-- Black Ribbon - ขยาย 20% -->
             <img src="{{ asset('black-ribbon.png') }}" alt="Mourning Ribbon" class="black-ribbon">
             
-            <div class="relative z-10 flex items-center justify-between px-4 py-2 lg:px-8">
-                <!-- Left: Empty space for layout balance -->
-                <div class="flex items-center gap-4 ml-16">
+            <div class="relative z-10 flex h-full items-center justify-between gap-4 px-4 py-2 lg:px-8">
+                <div class="flex min-w-0 items-center ml-16 lg:ml-20 xl:shrink-0">
+                    <img src="{{ asset('skn1-office-logo.png') }}"
+                         alt="สำนักงานเขตพื้นที่การศึกษาประถมศึกษาสกลนคร เขต 1"
+                         class="h-8 sm:h-10 lg:h-12 w-auto max-w-full object-contain object-left drop-shadow-sm">
                 </div>
                 
                 
                 <!-- Right: Motto + Logout -->
-                <div class="flex items-center gap-4">
-                    <img src="{{ asset('motto.png') }}" alt="Motto" class="h-10 lg:h-12 w-auto hidden lg:block drop-shadow-sm">
-                    <form method="POST" action="{{ route('logout') }}">
+                <div class="flex min-w-0 items-center gap-4">
+                    <img src="{{ asset('motto.png') }}" alt="Motto" class="hidden xl:block h-12 w-auto min-w-0 shrink object-contain drop-shadow-sm">
+                    <form method="POST" action="{{ route('logout') }}" class="shrink-0">
                         @csrf
                         <button type="submit" 
                                 class="flex items-center gap-2 text-sm text-gray-600 hover:text-pink-600 transition-colors bg-white/50 backdrop-blur-sm px-3 py-2 rounded-lg">
