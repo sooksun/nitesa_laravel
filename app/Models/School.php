@@ -71,6 +71,11 @@ class School extends Model
         return $this->hasMany(Improvement::class, 'schoolId');
     }
 
+    public function examResults(): HasMany
+    {
+        return $this->hasMany(ExamResult::class, 'schoolId');
+    }
+
     public function getLastSupervisionAttribute()
     {
         return $this->supervisions()->latest('date')->first();

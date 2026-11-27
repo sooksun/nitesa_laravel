@@ -80,6 +80,58 @@
                 </dl>
             </div>
 
+            @php $exam = $this->examResults; @endphp
+            @if($exam['rows']->isNotEmpty())
+            <!-- National exam results -->
+            <div class="rounded-xl bg-white shadow-sm ring-1 ring-gray-900/5">
+                <div class="px-6 py-4 border-b border-gray-100">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-sm font-semibold text-gray-900">ผลการทดสอบระดับชาติ ปีการศึกษา {{ $exam['year'] }}</h3>
+                        <a href="{{ route('exam-results.index', ['year' => $exam['year']]) }}" class="text-xs font-medium text-pink-600 hover:text-pink-500">ดูทั้งเขต</a>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-100">
+                        <thead>
+                            <tr>
+                                <th class="py-3 pl-6 pr-3 text-left text-xs font-semibold text-gray-500">การทดสอบ</th>
+                                <th class="px-3 py-3 text-left text-xs font-semibold text-gray-500">คะแนนเฉลี่ยร้อยละรายด้าน</th>
+                                <th class="px-3 py-3 text-right text-xs font-semibold text-gray-500">เฉลี่ยรวม</th>
+                                <th class="px-3 py-3 text-left text-xs font-semibold text-gray-500">ระดับ</th>
+                                <th class="py-3 pl-3 pr-6 text-right text-xs font-semibold text-gray-500">เทียบเขต</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            @foreach($exam['rows'] as $item)
+                                @php
+                                    $result = $item['result'];
+                                    $diff = ($result->average !== null && $item['areaAverage'] !== null) ? round($result->average - $item['areaAverage'], 2) : null;
+                                @endphp
+                                <tr>
+                                    <td class="whitespace-nowrap py-3 pl-6 pr-3 text-sm font-medium text-gray-900">
+                                        {{ $result->examType->label() }}
+                                        @if($result->examinees !== null)
+                                            <span class="block text-xs font-normal text-gray-500">ผู้เข้าสอบ {{ number_format($result->examinees) }} คน</span>
+                                        @endif
+                                    </td>
+                                    <td class="px-3 py-3 text-sm text-gray-700">
+                                        @foreach($result->examType->subjects() as $key => $label)
+                                            <span class="mr-3 inline-block whitespace-nowrap">{{ $label }} <span class="font-medium text-gray-900 tabular-nums">{{ $result->{$key} === null ? '–' : number_format($result->{$key}, 2) }}</span></span>
+                                        @endforeach
+                                    </td>
+                                    <td class="whitespace-nowrap px-3 py-3 text-right text-sm font-semibold text-gray-900 tabular-nums">{{ $result->average === null ? '–' : number_format($result->average, 2) }}</td>
+                                    <td class="whitespace-nowrap px-3 py-3 text-sm text-gray-700">{{ $result->qualityLevel ?? '–' }}</td>
+                                    <td class="whitespace-nowrap py-3 pl-3 pr-6 text-right text-sm font-medium tabular-nums {{ $diff === null ? 'text-gray-400' : ($diff >= 0 ? 'text-green-700' : 'text-red-700') }}">
+                                        {{ $diff === null ? '–' : ($diff > 0 ? '▲ +' : ($diff < 0 ? '▼ ' : '')) . number_format($diff, 2) }}
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            @endif
+
             <!-- Recent Supervisions -->
             <div class="rounded-xl bg-white shadow-sm ring-1 ring-gray-900/5">
                 <div class="px-6 py-4 border-b border-gray-100">

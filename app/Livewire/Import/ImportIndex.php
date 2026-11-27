@@ -2,9 +2,12 @@
 
 namespace App\Livewire\Import;
 
+use App\Enums\ExamType;
 use App\Models\NetworkGroup;
 use App\Models\Policy;
 use App\Models\School;
+use App\Services\Exam\InvalidExamFileException;
+use App\Services\ExamResultImporter;
 use Illuminate\Support\Facades\Log;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -19,9 +22,111 @@ class ImportIndex extends Component
     public array $importErrors = [];
     public array $results = [];
     public bool $importing = false;
+    public string $academicYear = '';
+    public bool $syncSchools = false;
+    public array $examSummary = [];
+
+    private const EXAM_TYPES = [
+        'exam_rt' => 'rt',
+        'exam_nt' => 'nt',
+        'exam_onet_p6' => 'onet-p6',
+        'exam_onet_m3' => 'onet-m3',
+    ];
+
+    public function mount(): void
+    {
+        $this->academicYear = (string) ((int) date('Y') + 542);
+    }
+
+    public function isExamImport(): bool
+    {
+        return isset(self::EXAM_TYPES[$this->importType]);
+    }
+
+    public function updatedImportType(): void
+    {
+        $this->results = [];
+        $this->importErrors = [];
+        $this->examSummary = [];
+        $this->syncSchools = false;
+    }
+
+    public function preview(): void
+    {
+        if ($this->isExamImport()) {
+            $this->runExamImport(true);
+        }
+    }
+
+    private function runExamImport(bool $dryRun): void
+    {
+        $this->validate([
+            'file' => 'required|mimes:xlsx,xls|max:10240',
+            'importType' => 'required|in:' . implode(',', array_keys(self::EXAM_TYPES)),
+            'academicYear' => 'required|digits:4',
+        ], [], ['academicYear' => 'ปีการศึกษา', 'file' => 'ไฟล์']);
+
+        $this->importErrors = [];
+        $this->results = [];
+        $this->examSummary = [];
+
+        try {
+            $summary = app(ExamResultImporter::class)->import(
+                ExamType::fromSlug(self::EXAM_TYPES[$this->importType]),
+                $this->file->getRealPath(),
+                $this->academicYear,
+                $this->syncSchools,
+                $dryRun,
+            );
+        } catch (InvalidExamFileException $e) {
+            $this->importErrors[] = $e->getMessage();
+
+            return;
+        } catch (\Throwable $e) {
+            Log::error('Exam import error: ' . $e->getMessage());
+            $this->importErrors[] = 'เกิดข้อผิดพลาดระหว่างนำเข้า กรุณาลองใหม่อีกครั้ง';
+
+            return;
+        }
+
+        $this->results = [
+            'total' => $summary['total'],
+            'imported' => $summary['imported'],
+            'failed' => count($summary['unmatched']),
+        ];
+        $this->examSummary = [
+            'dryRun' => $summary['dryRun'],
+            'matchedBy' => $summary['matchedBy'],
+            'schoolsCreated' => $summary['schoolsCreated'],
+            'benchmarks' => $summary['benchmarks'],
+            'nameDiffs' => $summary['nameDiffs'],
+        ];
+        foreach ($summary['unmatched'] as $row) {
+            $this->importErrors[] = "แถว {$row['row']}: {$row['name']} — {$row['reason']}";
+        }
+
+        if ($dryRun) {
+            return;
+        }
+
+        $this->file = null;
+        if ($summary['imported'] > 0) {
+            $this->dispatch('swal:success', [
+                'title' => 'สำเร็จ!',
+                'text' => "นำเข้าผลการทดสอบเรียบร้อย: {$summary['imported']} โรงเรียน",
+            ]);
+        }
+    }
 
     public function import()
     {
+        if ($this->isExamImport()) {
+            $this->runExamImport(false);
+
+            return;
+        }
+
+        $this->examSummary = [];
         $this->validate([
             'file' => 'required|mimes:xlsx,xls,csv|max:10240',
             'importType' => 'required|in:schools,policies,network_groups',
@@ -140,6 +245,7 @@ class ImportIndex extends Component
         if (is_string($value)) {
             return in_array(strtoupper(trim($value)), ['TRUE', '1', 'YES', 'Y'], true);
         }
+
         return (bool) $value;
     }
 

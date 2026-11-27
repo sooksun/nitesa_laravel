@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\ImportController;
 use App\Livewire\ActivityLog\ActivityLogIndex;
 use App\Livewire\Dashboard\DashboardSummary;
+use App\Livewire\ExamResult\ExamResultDashboard;
 use App\Livewire\Import\ImportIndex;
 use App\Livewire\Manual\ManualIndex;
 use App\Livewire\NetworkGroup\NetworkGroupIndex;
@@ -94,6 +95,9 @@ Route::middleware('auth')->group(function () {
 
     // Reports
     Route::get('/reports', ReportIndex::class)->name('reports.index');
+
+    // Exam results (RT / NT / O-NET)
+    Route::get('/exam-results', ExamResultDashboard::class)->name('exam-results.index');
 
     // Activity Log (Admin and Executive)
     Route::get('/activity-log', ActivityLogIndex::class)->name('activity-log.index')->middleware('role:ADMIN');
