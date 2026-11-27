@@ -89,7 +89,7 @@
                             </span>
                         </td>
                         <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                            {{ \App\Support\ThaiDate::format($user->createdAt) }}
+                            {{ \App\Support\ThaiDate::timestamp($user->createdAt, false) }}
                         </td>
                         <td class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
                             <div class="flex items-center justify-end gap-2">

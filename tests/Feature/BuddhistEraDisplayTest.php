@@ -43,7 +43,7 @@ class BuddhistEraDisplayTest extends TestCase
             'role' => 'ADMIN',
             'isActive' => true,
         ]);
-        $this->admin->forceFill(['createdAt' => '2021-02-03 04:05:06'])->save();
+        $this->admin->forceFill(['createdAt' => '2021-02-03 20:05:06'])->save();
 
         $this->school = School::create([
             'code' => 'T' . Str::upper(Str::random(8)),
@@ -94,12 +94,13 @@ class BuddhistEraDisplayTest extends TestCase
             ->assertSee('15/06/2562');
     }
 
-    public function test_user_list_shows_buddhist_era_created_date(): void
+    public function test_user_list_shows_created_date_in_buddhist_era_and_thai_time(): void
     {
         Livewire::actingAs($this->admin)
             ->test(UserList::class)
             ->set('search', $this->admin->email)
-            ->assertSee('03/02/2564');
+            ->assertSee('04/02/2564')
+            ->assertDontSee('03/02/2564');
     }
 
     public function test_notification_mail_uses_buddhist_era_date(): void

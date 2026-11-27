@@ -288,12 +288,12 @@
                     </div>
                     <div>
                         <dt class="text-xs text-gray-500">บันทึกเมื่อ</dt>
-                        <dd class="text-sm text-gray-900">{{ \App\Support\ThaiDate::format($supervision->createdAt, true) }}</dd>
+                        <dd class="text-sm text-gray-900">{{ \App\Support\ThaiDate::timestamp($supervision->createdAt) }}</dd>
                     </div>
                     @if($supervision->updatedAt && $supervision->updatedAt != $supervision->createdAt)
                     <div>
                         <dt class="text-xs text-gray-500">แก้ไขล่าสุด</dt>
-                        <dd class="text-sm text-gray-900">{{ \App\Support\ThaiDate::format($supervision->updatedAt, true) }}</dd>
+                        <dd class="text-sm text-gray-900">{{ \App\Support\ThaiDate::timestamp($supervision->updatedAt) }}</dd>
                     </div>
                     @endif
                 </dl>
@@ -342,7 +342,7 @@
                     </div>
                     <div>
                         <dt class="text-xs text-green-700">วันที่รับทราบ</dt>
-                        <dd class="text-sm text-green-900">{{ \App\Support\ThaiDate::format($supervision->acknowledgement->acknowledgedAt, true) }}</dd>
+                        <dd class="text-sm text-green-900">{{ \App\Support\ThaiDate::timestamp($supervision->acknowledgement->acknowledgedAt) }}</dd>
                     </div>
                     @if($supervision->acknowledgement->comment)
                     <div>
