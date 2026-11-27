@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\PolicyLevel;
 use App\Enums\SupervisionStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Acknowledgement;
@@ -18,9 +19,7 @@ use Illuminate\Http\Request;
  */
 class SupervisionController extends Controller
 {
-    public function __construct(private readonly SupervisionService $service)
-    {
-    }
+    public function __construct(private readonly SupervisionService $service) {}
 
     /**
      * Get paginated list of supervisions with filters
@@ -78,9 +77,7 @@ class SupervisionController extends Controller
             'type' => 'required|string|max:100',
             'date' => 'required|date',
             'academicYear' => 'nullable|string|max:10',
-            'ministerPolicyId' => 'nullable|exists:policy,id',
-            'obecPolicyId' => 'nullable|exists:policy,id',
-            'areaPolicyId' => 'nullable|exists:policy,id',
+            ...SupervisionService::policyRules(),
             'summary' => 'required|string',
             'suggestions' => 'required|string',
             'indicators' => 'array',
@@ -103,7 +100,7 @@ class SupervisionController extends Controller
             'status' => SupervisionStatus::DRAFT,
         ], $indicators);
 
-        return response()->json($supervision, 201);
+        return response()->json($this->present($supervision), 201);
     }
 
     /**
@@ -127,7 +124,7 @@ class SupervisionController extends Controller
             'areaPolicyRelation',
         ]);
 
-        return response()->json($supervision);
+        return response()->json($this->present($supervision));
     }
 
     /**
@@ -154,9 +151,7 @@ class SupervisionController extends Controller
             'type' => 'required|string|max:100',
             'date' => 'required|date',
             'academicYear' => 'nullable|string|max:10',
-            'ministerPolicyId' => 'nullable|exists:policy,id',
-            'obecPolicyId' => 'nullable|exists:policy,id',
-            'areaPolicyId' => 'nullable|exists:policy,id',
+            ...SupervisionService::policyRules(),
             'summary' => 'required|string',
             'suggestions' => 'required|string',
             'indicators' => 'array',
@@ -166,16 +161,11 @@ class SupervisionController extends Controller
             'indicators.*.comment' => 'nullable|string',
         ]);
 
-        if (array_key_exists('indicators', $validated)) {
-            $indicators = $validated['indicators'];
-            unset($validated['indicators']);
-            $supervision = $this->service->updateSupervision($supervision, $validated, $indicators);
-        } else {
-            $supervision->update($validated);
-            $supervision->load(['school', 'user', 'indicators']);
-        }
+        $indicators = $validated['indicators'] ?? null;
+        unset($validated['indicators']);
+        $supervision = $this->service->updateSupervision($supervision, $validated, $indicators);
 
-        return response()->json($supervision);
+        return response()->json($this->present($supervision));
     }
 
     /**
@@ -382,6 +372,29 @@ class SupervisionController extends Controller
         $supervision->load('acknowledgement');
 
         return response()->json($supervision);
+    }
+
+    /**
+     * Adds the per-level policy lists (`ministerPolicyIds`, `ministerPolicies`, ...) to the payload.
+     * The single-value `ministerPolicyId` style fields carry the first policy of each level.
+     *
+     * @return array<string, mixed>
+     */
+    protected function present(Supervision $supervision): array
+    {
+        $supervision->loadMissing('policies');
+        $data = $supervision->makeHidden('policies')->toArray();
+
+        foreach (PolicyLevel::cases() as $level) {
+            $policies = $supervision->policiesFor($level);
+            $data[$level->legacyColumn()] = $policies->first()?->id;
+            $data[$level->idsKey()] = $policies->pluck('id')->all();
+            $data[$level->policiesKey()] = $policies
+                ->map(fn($policy) => $policy->only(['id', 'type', 'code', 'title', 'isActive']))
+                ->all();
+        }
+
+        return $data;
     }
 
     protected function authorizeOwner(Request $request, Supervision $supervision): void

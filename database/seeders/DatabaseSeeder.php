@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Enums\IndicatorLevel;
+use App\Enums\PolicyLevel;
 use App\Enums\PolicyType;
 use App\Enums\Role;
 use App\Enums\SupervisionStatus;
@@ -11,6 +12,7 @@ use App\Models\NetworkGroup;
 use App\Models\Policy;
 use App\Models\School;
 use App\Models\Supervision;
+use App\Models\SupervisionPolicy;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -196,6 +198,7 @@ class DatabaseSeeder extends Seeder
                 'suggestions' => "ข้อเสนอแนะ: ควรส่งเสริมการใช้นวัตกรรมในการจัดการเรียนรู้เพิ่มเติม และพัฒนาระบบการประเมินผลให้มีความหลากหลายมากขึ้น",
                 'status' => $status,
             ]);
+            $this->linkPolicies($supervision);
 
             // Create indicators for this supervision
             $selectedIndicators = array_slice($indicatorNames, 0, rand(3, 5));
@@ -309,6 +312,7 @@ class DatabaseSeeder extends Seeder
                     'suggestions' => "ข้อเสนอแนะ: ควรส่งเสริมการใช้นวัตกรรมในการจัดการเรียนรู้เพิ่มเติม และพัฒนาระบบการประเมินผลให้มีความหลากหลายมากขึ้น",
                     'status' => $status,
                 ]);
+                $this->linkPolicies($supervision);
 
                 // Create indicators
                 $selectedIndicators = array_slice($indicatorNames, 0, rand(3, 5));
@@ -387,6 +391,21 @@ class DatabaseSeeder extends Seeder
                 $startIndex = ($supervisors->search($supervisor)) * $schoolsPerSupervisor;
                 $assignedSchools = $schools->slice($startIndex, $schoolsPerSupervisor);
                 $supervisor->assignedSchools()->attach($assignedSchools->pluck('id'));
+            }
+        }
+    }
+
+    private function linkPolicies(Supervision $supervision): void
+    {
+        foreach (PolicyLevel::cases() as $level) {
+            $policyId = $supervision->{$level->legacyColumn()};
+            if ($policyId !== null) {
+                SupervisionPolicy::create([
+                    'supervisionId' => $supervision->id,
+                    'policyId' => $policyId,
+                    'level' => $level,
+                    'position' => 0,
+                ]);
             }
         }
     }

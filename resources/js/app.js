@@ -1,6 +1,7 @@
 import './bootstrap';
 import Swal from 'sweetalert2';
 import thaiDatePicker from './thai-date-picker';
+import multiSelect from './multi-select';
 
 // Make Swal available globally
 window.Swal = Swal;
@@ -22,6 +23,7 @@ window.Toast = Toast;
 
 document.addEventListener('alpine:init', () => {
     window.Alpine.data('thaiDatePicker', thaiDatePicker);
+    window.Alpine.data('multiSelect', multiSelect);
 });
 
 // Livewire event listeners for SweetAlert2

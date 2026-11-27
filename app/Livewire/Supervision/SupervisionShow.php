@@ -27,9 +27,7 @@ class SupervisionShow extends Component
             'indicators',
             'attachments',
             'acknowledgement',
-            'ministerPolicyRelation',
-            'obecPolicyRelation',
-            'areaPolicyRelation',
+            'policies',
         ]);
     }
 

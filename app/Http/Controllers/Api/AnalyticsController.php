@@ -83,13 +83,9 @@ class AnalyticsController extends Controller
         $academicYear = $request->academicYear ?? $request->academic_year;
 
         $query = DB::table('supervision')
-            ->select('policy.title', 'policy.code', DB::raw('count(*) as usage_count'))
-            ->leftJoin('policy', function ($join) {
-                $join->on('supervision.ministerPolicyId', '=', 'policy.id')
-                    ->orOn('supervision.obecPolicyId', '=', 'policy.id')
-                    ->orOn('supervision.areaPolicyId', '=', 'policy.id');
-            })
-            ->whereNotNull('policy.id');
+            ->select('policy.title', 'policy.code', DB::raw('count(distinct supervision.id) as usage_count'))
+            ->join('supervisionpolicy', 'supervisionpolicy.supervisionId', '=', 'supervision.id')
+            ->join('policy', 'policy.id', '=', 'supervisionpolicy.policyId');
 
         if ($academicYear) {
             $query->where('supervision.academicYear', $academicYear);

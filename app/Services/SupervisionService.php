@@ -2,14 +2,16 @@
 
 namespace App\Services;
 
+use App\Enums\PolicyLevel;
 use App\Enums\Role;
 use App\Models\Indicator;
 use App\Models\Supervision;
+use App\Models\SupervisionPolicy;
 use App\Models\User;
-use Spatie\Activitylog\Models\Activity;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Spatie\Activitylog\Models\Activity;
 
 /**
  * Service class for Supervision business logic
@@ -19,7 +21,29 @@ use Illuminate\Support\Facades\Log;
 class SupervisionService
 {
     /**
+     * Validation rules for the policy selections accepted by createSupervision/updateSupervision.
+     *
+     * @return array<string, list<string>>
+     */
+    public static function policyRules(bool $withLegacyFields = true): array
+    {
+        $rules = [];
+        foreach (PolicyLevel::cases() as $level) {
+            if ($withLegacyFields) {
+                $rules[$level->legacyColumn()] = ['nullable', 'string', 'exists:policy,id'];
+            }
+            $rules[$level->idsKey()] = ['nullable', 'array', 'max:100'];
+            $rules[$level->idsKey() . '.*'] = ['string', 'distinct', 'exists:policy,id'];
+        }
+
+        return $rules;
+    }
+
+    /**
      * Create a new supervision with indicators
+     *
+     * Policies are passed in $data as `ministerPolicyIds` / `obecPolicyIds` / `areaPolicyIds` (arrays);
+     * the single-value `ministerPolicyId` / `obecPolicyId` / `areaPolicyId` keys are still accepted.
      *
      * @param array<string, mixed> $data Supervision data
      * @param array<int, array<string, mixed>> $indicators Indicator data
@@ -29,13 +53,16 @@ class SupervisionService
     public function createSupervision(array $data, array $indicators = []): Supervision
     {
         return DB::transaction(function () use ($data, $indicators) {
+            $policies = $this->pullPolicySelections($data, true);
             $supervision = Supervision::create($data);
 
             if (! empty($indicators)) {
                 $this->createIndicators($supervision, $indicators);
             }
 
-            return $supervision->load(['school', 'user', 'indicators']);
+            $this->syncPolicies($supervision, $policies);
+
+            return $supervision->load(['school', 'user', 'indicators', 'policies']);
         });
     }
 
@@ -44,19 +71,96 @@ class SupervisionService
      *
      * @param Supervision $supervision Supervision to update
      * @param array<string, mixed> $data Supervision data
-     * @param array<int, array<string, mixed>> $indicators Indicator data
+     * @param array<int, array<string, mixed>>|null $indicators Indicator data; null leaves indicators untouched
      * @return Supervision Updated supervision instance
      * @throws \Exception
      */
-    public function updateSupervision(Supervision $supervision, array $data, array $indicators = []): Supervision
+    public function updateSupervision(Supervision $supervision, array $data, ?array $indicators = []): Supervision
     {
         return DB::transaction(function () use ($supervision, $data, $indicators) {
+            $policies = $this->pullPolicySelections($data, false);
             $supervision->update($data);
 
-            $this->syncIndicators($supervision, $indicators);
+            if ($indicators !== null) {
+                $this->syncIndicators($supervision, $indicators);
+            }
 
-            return $supervision->load(['school', 'user', 'indicators']);
+            $this->syncPolicies($supervision, $policies);
+
+            return $supervision->load(['school', 'user', 'indicators', 'policies']);
         });
+    }
+
+    /**
+     * Takes the policy selections out of $data and mirrors the first policy of each level
+     * into the single-value column. Levels absent from $data are left untouched on update.
+     *
+     * @param array<string, mixed> $data
+     * @return array<string, list<string>> keyed by PolicyLevel value
+     */
+    protected function pullPolicySelections(array &$data, bool $creating): array
+    {
+        $selections = [];
+
+        foreach (PolicyLevel::cases() as $level) {
+            $idsKey = $level->idsKey();
+            $legacyKey = $level->legacyColumn();
+
+            if (array_key_exists($idsKey, $data)) {
+                $ids = (array) ($data[$idsKey] ?? []);
+            } elseif (array_key_exists($legacyKey, $data)) {
+                $ids = [$data[$legacyKey]];
+            } elseif ($creating) {
+                $ids = [];
+            } else {
+                continue;
+            }
+            unset($data[$idsKey]);
+
+            $ids = array_values(array_unique(array_filter(
+                array_map(fn($id) => is_scalar($id) ? (string) $id : '', $ids),
+                fn(string $id) => $id !== ''
+            )));
+
+            $data[$legacyKey] = $ids[0] ?? null;
+            $selections[$level->value] = $ids;
+        }
+
+        return $selections;
+    }
+
+    /**
+     * @param array<string, list<string>> $selections keyed by PolicyLevel value
+     */
+    protected function syncPolicies(Supervision $supervision, array $selections): void
+    {
+        foreach ($selections as $level => $policyIds) {
+            $current = SupervisionPolicy::query()
+                ->where('supervisionId', $supervision->id)
+                ->where('level', $level)
+                ->orderBy('position')
+                ->orderBy('id')
+                ->pluck('policyId')
+                ->all();
+
+            if ($current === $policyIds) {
+                continue;
+            }
+
+            SupervisionPolicy::query()
+                ->where('supervisionId', $supervision->id)
+                ->where('level', $level)
+                ->delete();
+
+            foreach ($policyIds as $position => $policyId) {
+                SupervisionPolicy::create([
+                    'supervisionId' => $supervision->id,
+                    'policyId' => $policyId,
+                    'level' => $level,
+                    'position' => $position,
+                ]);
+            }
+        }
     }
 
     /**
@@ -248,7 +352,7 @@ class SupervisionService
         return User::query()
             ->where('role', Role::SCHOOL->value)
             ->where('isActive', true)
-            ->whereHas('assignedSchools', fn ($q) => $q->where('school.id', $supervision->schoolId))
+            ->whereHas('assignedSchools', fn($q) => $q->where('school.id', $supervision->schoolId))
             ->get();
     }
 
