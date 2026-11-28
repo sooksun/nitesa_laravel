@@ -37,6 +37,18 @@ class ThaiDateTest extends TestCase
         $this->assertSame('2026-12-31 18:30:45', $moment->format('Y-m-d H:i:s'));
     }
 
+    public function test_relative_time_is_in_thai(): void
+    {
+        Carbon::setTestNow('2026-11-28 12:00:00');
+
+        $this->assertSame('10 เดือนที่แล้ว', ThaiDate::ago(Carbon::parse('2026-01-21 03:48:24')));
+        $this->assertSame('5 นาทีที่แล้ว', ThaiDate::ago(Carbon::parse('2026-11-28 11:55:00')));
+        $this->assertSame('-', ThaiDate::ago(null));
+        $this->assertSame('en', app()->getLocale());
+
+        Carbon::setTestNow();
+    }
+
     public function test_calendar_date_is_not_shifted(): void
     {
         $this->assertSame('31/12/2569', ThaiDate::format(Carbon::parse('2026-12-31 18:30:45', 'UTC')));

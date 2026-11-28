@@ -169,7 +169,7 @@
                                 <div class="flex flex-col">
                                     <span class="font-medium">{{ \App\Support\ThaiDate::timestamp($activity->created_at, false) }}</span>
                                     <span class="text-xs text-gray-500">{{ \App\Support\ThaiDate::time($activity->created_at) }}</span>
-                                    <span class="text-xs text-gray-400">{{ $activity->created_at->diffForHumans() }}</span>
+                                    <span class="text-xs text-gray-400">{{ \App\Support\ThaiDate::ago($activity->created_at) }}</span>
                                 </div>
                             </td>
 

@@ -34,6 +34,11 @@ final class ThaiDate
         return self::toDisplayTimezone($moment)?->format('H:i:s') ?? $empty;
     }
 
+    public static function ago(?DateTimeInterface $moment, string $empty = '-'): string
+    {
+        return $moment === null ? $empty : Carbon::instance($moment)->locale('th')->diffForHumans();
+    }
+
     public static function timezone(): string
     {
         return config('app.display_timezone', 'Asia/Bangkok');
